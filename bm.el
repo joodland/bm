@@ -3,10 +3,10 @@
 ;; Copyrigth (C) 2000-2003  Jo Odland
 
 ;; Author: Jo Odland <jood@online.no>
-;; Time-stamp:	<ons nov  5 22:23:48 2003  jood>
+;; Time-stamp:	<Fri Nov  7 14:01:55 2003  jood>
 ;; Version: $Id$
 ;; Keywords; bookmark, highlight, faces, persistent
-;; URL: http://home.online.no/~jood/emacs/bm.el
+;; URL: http://www.nongnu.org/bm/
 
 ;; Portions Copyright (C) 2002 by Ben Key
 ;; Updated by Ben Key <bkey1@tampabay.rr.com> on 2002-12-05
