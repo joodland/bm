@@ -3,7 +3,7 @@
 ;; Copyrigth (C) 2000-2003  Jo Odland
 
 ;; Author: Jo Odland <jood@online.no>
-;; Time-stamp:	<Fri Nov  7 14:01:55 2003  jood>
+;; Time-stamp:	<ons nov 12 00:32:15 2003  jood>
 ;; Version: $Id$
 ;; Keywords; bookmark, highlight, faces, persistent
 ;; URL: http://www.nongnu.org/bm/
@@ -767,22 +767,26 @@ A bookmark implementation of `overlay-list'."
       (setq bm-repository repository))))
 
 
-(defun bm-repository-load nil 
-  "Load the repository from the file specified by `bm-repository-file'."
-  (if (and bm-repository-file 
-	   (file-readable-p bm-repository-file))
-      (let ((repository-buffer (find-file-noselect bm-repository-file)))
+(defun bm-repository-load (&optional file)
+  "Load the repository from the file specified or to `bm-repository-file'."
+  (if (null file)
+      (setq file bm-repository-file))
+  (if (and file 
+	   (file-readable-p file))
+      (let ((repository-buffer (find-file-noselect file)))
 	(setq bm-repository (with-current-buffer repository-buffer
 			      (goto-char (point-min))
 			      (read (current-buffer))))
 	(kill-buffer repository-buffer))))
 
 
-(defun bm-repository-save nil 
-  "Save the repository to the file specified by `bm-repository-file'."
-  (if (and bm-repository-file
-	   (file-writable-p bm-repository-file))
-      (let ((repository-buffer (find-file-noselect bm-repository-file)))
+(defun bm-repository-save (&optional file)
+  "Save the repository to the file specified or to `bm-repository-file'."
+  (if (null file)
+      (setq file bm-repository-file))
+  (if (and file
+	   (file-writable-p file))
+      (let ((repository-buffer (find-file-noselect file)))
 	(with-current-buffer repository-buffer
 	  (erase-buffer)
 	  (insert ";; bm.el -- persistent bookmarks. ")
