@@ -3,7 +3,7 @@
 ;; Copyrigth (C) 2000-2003  Jo Odland
 
 ;; Author: Jo Odland <jood@online.no>
-;; Time-stamp:	<søn nov  2 02:08:19 2003  jood>
+;; Time-stamp:	<man nov  3 23:08:29 2003  jood>
 ;; Version: $Id$
 ;; Keywords; bookmark, highlight, faces, persistent
 ;; URL: http://home.online.no/~jood/emacs/bm.el
@@ -98,8 +98,15 @@
 ;;   repository is controlled by `bm-repository-size'.
 ;;
 ;;   The buffer local variable `bm-buffer-persistence' decides if
-;;   bookmarks in a buffer is persistent or not. Use the function
-;;   `bm-toggle-buffer-persistence' to toggle bookmark persistence.
+;;   bookmarks in a buffer is persistent or not. Bookmarks are
+;;   non-persistent as default. To have bookmarks persistent as
+;;   default add the following line to .emacs.
+;;
+;;   ;; make bookmarks persistent as default
+;;   (setq-default bm-buffer-persistence t)
+
+;;   Use the function `bm-toggle-buffer-persistence' to toggle
+;;   bookmark persistence.
 ;;
 ;;   To have automagic bookmark persistence we need to add some
 ;;   functions to the following hooks. Insert the following code
