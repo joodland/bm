@@ -3,7 +3,7 @@
 ;; Copyrigth (C) 2000-2003  Jo Odland
 
 ;; Author: Jo Odland <jood@online.no>
-;; Time-stamp:	<man nov  3 23:08:29 2003  jood>
+;; Time-stamp:	<ons nov  5 22:23:48 2003  jood>
 ;; Version: $Id$
 ;; Keywords; bookmark, highlight, faces, persistent
 ;; URL: http://home.online.no/~jood/emacs/bm.el
@@ -112,6 +112,17 @@
 ;;   functions to the following hooks. Insert the following code
 ;;   into your .emacs file:
 ;;
+;;   If you are using desktop or other packages that restore buffers
+;;   on start up, bookmarks will not be restored. When using
+;;   `after-init-hook' to restore the repository, it will be restored
+;;   *after* .emacs is finished. To load the repository when bm is
+;;   loaded set the variable `bm-restore-repository-on-load' to t,
+;;   *before* loading bm (and don't use the `after-init-hook').
+;;
+;;   ;; Make sure the repository is loaded as early as possible
+;;   (setq bm-restore-repository-on-load t)
+;;   (require 'bm)
+;;
 ;;   ;; Loading the repository from file when on start up.
 ;;   (add-hook' after-init-hook 'bm-repository-load)
 ;;
@@ -135,9 +146,18 @@
 ;;   (add-hook 'after-revert-hook 'bm-buffer-restore)
 ;;
 ;;
-;;   The after-save-hook and after-revert-hook is not necessary to use
-;;   to achieve persistence, but it makes the bookmark data in
-;;   repository more connected to the file state.
+;;   The `after-save-hook' and `after-revert-hook' is not necessary to
+;;   use to achieve persistence, but it makes the bookmark data in
+;;   repository more connected to the file state. 
+;;
+;;   The `after-revert-hook' might cause trouble when using packages
+;;   that automatically reverts the buffer (like vc after a check-in).
+;;   This can easily be avoided if the package provides a hook that is
+;;   called before the buffer is reverted (like `vc-before-checkin-hook'). 
+;;   Then new bookmarks can be saved before the buffer is reverted.
+;;
+;;   ;; make sure bookmarks is saved before check-in (and revert-buffer)
+;;   (add-hook 'vc-before-checkin-hook 'bm-buffer-save)
 
 
 
@@ -297,6 +317,12 @@ t, restore if possible."
   :type 'boolean
   :group 'bm)
 
+(defvar bm-restore-repository-on-load nil
+  "Specify if repository should be restored when loading bm.
+
+nil, don't restore repository on load. 
+t, restore repository when this file is loaded. This must be set
+before bm is loaded. ")
 
 (defvar bm-repository nil
   "Alist with all persistent bookmark data.")
@@ -770,6 +796,12 @@ A bookmark implementation of `overlay-list'."
   "Empty the repository."
   (interactive)
   (setq bm-repository nil))
+
+
+
+;; restore repository on load
+(if bm-restore-repository-on-load
+    (bm-repository-load))
 
 
 ;; bm.el ends here
