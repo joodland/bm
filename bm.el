@@ -3,7 +3,7 @@
 ;; Copyrigth (C) 2000-2003  Jo Odland
 
 ;; Author: Jo Odland <jood@online.no>
-;; Time-stamp:	<Thu Oct 30 10:56:39 2003  jood>
+;; Time-stamp:	<søn nov  2 02:08:19 2003  jood>
 ;; Version: $Id$
 ;; Keywords; bookmark, highlight, faces, persistent
 ;; URL: http://home.online.no/~jood/emacs/bm.el
@@ -47,7 +47,7 @@
 ;;    - Setting bookmarks based on a regexp, `bm-bookmark-regexp' and 
 ;;      `bm-bookmark-regexp-region'.
 ;;    - Goto line position or start of line, `bm-goto-position'.
-;;    - Bookmark persistence (see below).
+;;    - Persistent bookmarks (see below).
 ;;    - Extract bookmarks into separate buffer, `bm-extract'.
 ;;
 ;;   The use of overlays for bookmarks was inspired by highline.el by
@@ -196,19 +196,27 @@ over overlays with lower priority.  *Don't* use negative number."
 
 
 (defface bm-face
-  '((((class grayscale) (background light)) (:background "DimGray"))
-    (((class grayscale) (background dark))  (:background "LightGray"))
-    (((class color) (background light)) (:foreground "White" :background "DarkOrange1"))
-    (((class color) (background dark))  (:foreground "Black" :background "DarkOrange1")))
+  '((((class grayscale) 
+      (background light)) (:background "DimGray"))
+    (((class grayscale) 
+      (background dark))  (:background "LightGray"))
+    (((class color) 
+      (background light)) (:foreground "White" :background "DarkOrange1"))
+    (((class color) 
+      (background dark))  (:foreground "Black" :background "DarkOrange1")))
   "Face used to highlight current line."
   :group 'bm)
 
 
 (defface bm-persistent-face
-  '((((class grayscale) (background light)) (:background "DimGray"))
-    (((class grayscale) (background dark))  (:background "LightGray"))
-    (((class color) (background light)) (:foreground "White" :background "DarkBlue"))
-    (((class color) (background dark))  (:foreground "Black" :background "DarkBlue")))
+  '((((class grayscale) 
+      (background light)) (:background "DimGray"))
+    (((class grayscale) 
+      (background dark))  (:background "LightGray"))
+    (((class color) 
+      (background light)) (:foreground "White" :background "DarkBlue"))
+    (((class color) 
+      (background dark))  (:foreground "Black" :background "DarkBlue")))
   "Face used to highlight current line if bookmark is persistent."
   :group 'bm)
 
@@ -263,13 +271,24 @@ repository will not be persistent.."
 
 
 (defcustom bm-buffer-persistence nil
-  "*Specify if bookmarks in a buffer should be persistent. Buffer local variable.
+  "*Specify if bookmarks in a buffer should be persistent. Buffer
+local variable.
 
 nil, don't save bookmarks
 t, save bookmarks."
   :type 'boolean
   :group 'bm)
 (make-variable-buffer-local 'bm-buffer-persistence)
+
+
+(defcustom bm-restore-on-mismatch nil
+  "*Specify if bookmarks should be restored when there is a buffer
+size mismatch.
+
+nil, don't restore
+t, restore if possible."
+  :type 'boolean
+  :group 'bm)
 
 
 (defvar bm-repository nil
@@ -291,23 +310,24 @@ t, save bookmarks."
 (defun bm-bookmark-add nil
   "Add bookmark at current line. Do nothing if no bookmark is
 present."
-  (if (not (bm-bookmark-at (point)))
-      (let ((bookmark (make-overlay (bm-start-position)
-				    (bm-end-position))))
-
-
-        (overlay-put bookmark 'position (point-marker))
-	(if bm-buffer-persistence
-	    (overlay-put bookmark 'face bm-persistent-face)
-	  (overlay-put bookmark 'face bm-face))
-	(overlay-put bookmark 'evaporate t)
-        (unless (featurep 'xemacs)
-          (overlay-put bookmark 'priority bm-priority)
-          (overlay-put bookmark 'modification-hooks '(bm-freeze))
-          (overlay-put bookmark 'insert-in-front-hooks '(bm-freeze-in-front))
-          (overlay-put bookmark 'insert-behind-hooks '(bm-freeze)))
-	(overlay-put bookmark 'category 'bm)
-	bookmark)))
+  (if (bm-bookmark-at (point))
+      nil				; bookmark exists
+    (let ((bookmark (make-overlay (bm-start-position) (bm-end-position))))
+      ;; set market
+      (overlay-put bookmark 'position (point-marker))
+      ;; select bookmark face
+      (if bm-buffer-persistence
+	  (overlay-put bookmark 'face bm-persistent-face)
+	(overlay-put bookmark 'face bm-face))
+      (overlay-put bookmark 'evaporate t)
+      (overlay-put bookmark 'category 'bm)
+      (unless (featurep 'xemacs)
+	;; gnu emacs specific features
+	(overlay-put bookmark 'priority bm-priority)
+	(overlay-put bookmark 'modification-hooks '(bm-freeze))
+	(overlay-put bookmark 'insert-in-front-hooks '(bm-freeze-in-front))
+	(overlay-put bookmark 'insert-behind-hooks '(bm-freeze)))
+      bookmark)))
 
 
 (defun bm-bookmark-remove (&optional bookmark)
@@ -318,7 +338,6 @@ optional parameter."
 
   (if (bm-bookmarkp bookmark)
       (delete-overlay bookmark)))
-
 
 
 ;;;###autoload
@@ -496,7 +515,8 @@ A bookmark implementation of `overlay-list'."
 (defun bm-bookmark-regexp-region (beg end)
   "Set bookmark on lines that matches regexp in region."
   (interactive "r")
-  (let ((regexp (read-from-minibuffer "regexp: " nil nil nil 'bm-regexp-history))
+  (let ((regexp (read-from-minibuffer 
+		 "regexp: " nil nil nil 'bm-regexp-history))
         (count 0))
     (save-excursion
       (goto-char beg)
@@ -507,35 +527,87 @@ A bookmark implementation of `overlay-list'."
     (message "%d bookmark(s) created." count)))
 
 
-;; (defun bm-bookmark-line (line)
-;;   "Set a bookmark on the specified line."
-;;   (interactive)
-;;   (let ((lines (count-lines (point-min) (point-max))))
-;;     (save-excursion
-;;       (if (> line lines)
-;;           (message "Unable to set bookmerk at line %d. Only %d lines in buffer" line lines)
-;;         (goto-line line)
-;;         (bm-bookmark-add)))))
+(defun bm-bookmark-line (line)
+  "Set a bookmark on the specified line."
+  (interactive "nSet a bookmark on line: ")
+  (let ((lines (count-lines (point-min) (point-max))))
+    (if (> line lines)
+	(message "Unable to set bookmerk at line %d. Only %d lines in buffer" 
+		 line lines)
+      (goto-line line)
+      (bm-bookmark-add))))
   
 
 (defun bm-extract nil
-  "Extract bookmarked lines to the *bookmarks* buffer."
+  "Extract bookmarked lines to the *bm-extract* buffer."
   (interactive)
   (if (= (bm-count) 0)
       (message "No bookmarks defined.")
     (let* ((bookmarks (bm-lists))
 	   (lines (mapconcat
 		   '(lambda (bm)
-		      (format 
-		       "%4d: %s" 
-		       (count-lines (point-min) (overlay-start bm))
-		       (buffer-substring-no-properties (overlay-start bm) (overlay-end bm))))
-		   (append (reverse (car bookmarks)) (cdr bookmarks)) "")))
+		      (let ((string (format "%4d:  %s" 
+					    (count-lines (point-min) (overlay-start bm))
+					    (buffer-substring (overlay-start bm) (overlay-end bm)))))
+			(put-text-property 0 (length string) 'bm-buffer  (buffer-name)  string)
+			(put-text-property 0 (length string) 'bm-bookmark  bm  string)
+			string))
+		   (append
+		    ;; xemacs has the list sorted after buffer position, while
+		    ;; gnu emacs list is sorted relative to current position.
+		    (if (featurep 'xemacs) 
+			(car bookmarks) 
+		      (reverse (car bookmarks))) 
+		    (cdr bookmarks)) "")))
       ;; set output buffer
-      (with-output-to-temp-buffer "*bookmarks*"
-	(save-excursion
-	  (set-buffer standard-output)
-	  (insert lines))))))
+      (with-output-to-temp-buffer "*bm-extract*"
+	(set-buffer standard-output)
+	(insert "Line:  Content:\n")
+	(insert lines)
+	(bm-extract-mode)
+	(setq buffer-read-only t)
+	))))
+
+
+(defun bm-extract-goto-bookmark nil
+  "Goto the bookmark on current line in the *bm-extract* buffer."
+  (interactive)
+  (let ((buffer-name (get-text-property (point) 'bm-buffer))
+	(bookmark (get-text-property (point) 'bm-bookmark)))
+    (if (null buffer-name)
+	(message "No bookmark at this line.")
+      (pop-to-buffer (get-buffer buffer-name))
+      (bm-goto bookmark))))
+
+
+(defun bm-extract-show-bookmark nil
+  "Show the bookmark on current line in the *bm-extract* buffer."
+  (interactive)
+  (let ((buffer-name (get-text-property (point) 'bm-buffer))
+	(bookmark (get-text-property (point) 'bm-bookmark)))
+    (if (null buffer-name)
+	(message "No bookmark at this line.")
+      (let ((current-buffer (current-buffer)))
+	(pop-to-buffer (get-buffer buffer-name))
+	(bm-goto bookmark)
+	(pop-to-buffer current-buffer)))))
+
+
+(defvar bm-extract-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "RET") 'bm-extract-goto-bookmark)
+    (define-key map (kbd "SPC") 'bm-extract-show-bookmark)
+    map)
+  "Keymap for `bm-extract-mode'.")
+
+
+(defun bm-extract-mode nil
+  "Major mode for `bm-extract' buffers."
+  (interactive)
+  (kill-all-local-variables)
+  (setq major-mode 'bm-extract-mode)
+  (setq mode-name "Extract")
+  (use-local-map bm-extract-mode-map))
 
 
 (defun bm-toggle-buffer-persistence nil
@@ -566,27 +638,37 @@ A bookmark implementation of `overlay-list'."
   (interactive)
   (if (assoc (buffer-file-name) bm-repository)
       (let* ((buffer-data (assoc (buffer-file-name) bm-repository))
-	     (size (cdr (assoc 'size buffer-data)))
-	     (timestamp (cdr (assoc 'timestamp buffer-data)))
+	     (buffer-size-match (equal (point-max) 
+				       (cdr (assoc 'size buffer-data))))
 	     (positions (cdr (assoc 'positions buffer-data))))
       
 	;; validate buffer size
-	(if (equal size (point-max))
+	(if (or buffer-size-match
+		bm-restore-on-mismatch)
 	    ;; restore bookmarks
-	    (save-excursion
-	      ;; set buffer persistent
-	      (setq bm-buffer-persistence t)
-	      
-	      (while positions
-		(goto-char (car positions))
-		(bm-bookmark-add)
-		(setq positions (cdr positions)))
+	    (let ((pos nil)
+		  (count 0))
 
-	      (message "%d bookmark(s) restored." (bm-count)))
+	      (setq bm-buffer-persistence t) ; enable persistence
+	      (save-excursion
+		(while positions
+		  (setq pos (car positions))
+
+		  (if (and (< pos (point-min))
+			   (> (point-max) pos))
+		      nil		; outside buffer, skip bookmark
+		    (goto-char pos)
+		    (bm-bookmark-add)
+		    (setq count (1+ count))
+		    (setq positions (cdr positions)))))
+
+	      (if buffer-size-match
+		  (message "%d bookmark(s) restored." count)
+		(message "Buffersize mismatch. %d bookmarks restored." count)))
 	
 	  ;; size mismatch
 	  (bm-repository-remove (buffer-file-name))
-	  (message "Buffersize mismatch. Unable to restore bookmarks.")))
+	  (message "Buffersize mismatch. No bookmarks restored.")))
     (if (interactive-p) (message "No bookmarks in repository."))))
 
 
@@ -656,22 +738,25 @@ A bookmark implementation of `overlay-list'."
   "Load the repository from the file specified by `bm-repository-file'."
   (if (and bm-repository-file 
 	   (file-readable-p bm-repository-file))
-      (setq bm-repository 
-	    (with-current-buffer (find-file-noselect bm-repository-file)
-	      (goto-char (point-min))
-	      (read (current-buffer))))))
+      (let ((repository-buffer (find-file-noselect bm-repository-file)))
+	(setq bm-repository (with-current-buffer repository-buffer
+			      (goto-char (point-min))
+			      (read (current-buffer))))
+	(kill-buffer repository-buffer))))
 
 
 (defun bm-repository-save nil 
   "Save the repository to the file specified by `bm-repository-file'."
   (if (and bm-repository-file
 	   (file-writable-p bm-repository-file))
-      (with-current-buffer (find-file-noselect bm-repository-file)
-	(erase-buffer)
-	(insert ";; bm.el -- persistent bookmarks. ")
-	(insert "Do not edit this file.\n")
-	(prin1 bm-repository (current-buffer))
-	(save-buffer))))
+      (let ((repository-buffer (find-file-noselect bm-repository-file)))
+	(with-current-buffer repository-buffer
+	  (erase-buffer)
+	  (insert ";; bm.el -- persistent bookmarks. ")
+	  (insert "Do not edit this file.\n")
+	  (prin1 bm-repository (current-buffer))
+	  (save-buffer))
+	(kill-buffer repository-buffer))))
 
 
 (defun bm-repository-empty nil
