@@ -3,7 +3,6 @@
 ;; Copyrigth (C) 2000-2006  Jo Odland
 
 ;; Author: Jo Odland <jood@online.no>
-;; Time-stamp:	<ons nov 12 00:32:15 2003  jood>
 ;; Version: $Id$
 ;; Keywords; bookmark, highlight, faces, persistent
 ;; URL: http://www.nongnu.org/bm/
@@ -48,24 +47,25 @@
 ;;    - Setting bookmarks based on a regexp, see `bm-bookmark-regexp' and 
 ;;      `bm-bookmark-regexp-region'.
 ;;
+;;    - Bookmark line based on line number, see `bm-bookmark-line'.
+;;
 ;;    - Goto line position or start of line, see `bm-goto-position'.
 ;;
 ;;    - Persistent bookmarks (see below). Use `bm-toggle-buffer-persistence'
 ;;      to enable/disable persistent bookmarks (buffer local).
 ;;
 ;;    - List bookmarks with annotations and context in a separate buffer, 
-;;      see `bm-extract'.
-;;
-;;    - Bookmark lines based matching a regexp, see `bm-bookmark-regexp' and 
-;;      `bm-bookmark-regexp-region'.
-;;
-;;    - Bookmark line based on line number, see `bm-bookmark-line'.
+;;      see `bm-show'.
 ;;
 ;;    - Annotate bookmarks, see `bm-bookmark-annotate' and `bm-bookmark-show-annotation'.
 ;;      Set the variable `bm-annotate-on-create' to t to be prompted for
 ;;      an annotation when bookmark is created.
 ;;
-;;   This package is developed and testet on GNU Emacs 21.2. It should
+
+
+;;; Known limitations:
+;;
+;;   This package is developed and testet on GNU Emacs 21.3. It should
 ;;   work on all GNU Emacs 21.x and also on XEmacs 21.x with some
 ;;   limitations.
 ;;
@@ -209,7 +209,7 @@
   "The repository version.")
 
 (defgroup bm nil
-  "Toggle visible, buffer local, bookmarks."
+  "Visible, buffer local bookmarks."
   :link '(emacs-library-link :tag "Source Lisp File" "bm.el")
   :group 'faces
   :group 'editing
@@ -365,11 +365,11 @@ before bm is loaded. ")
 (defvar bm-wrapped nil
   "State variable to support wrapping.")
 
-(defvar bm-extract-header-string "%5s %-20s %s"
-  "The extract header format.")
+(defvar bm-show-header-string "%5s %-20s %s"
+  "The bookmark header format.")
 
-(defvar bm-extract-format-string "%5d %-20s %s"
-  "The extract line format.")
+(defvar bm-show-format-string "%5d %-20s %s"
+  "The bookmark line format.")
 
 
 
@@ -411,8 +411,8 @@ specified with the optional parameter."
     (message "No bookmark at current line.")))
 
 
-(defun bm-bookmark-add nil
-  "Add bookmark at current line. Do nothing if no bookmark is
+(defun bm-bookmark-add (&optional annotation)
+  "Add bookmark at current line. Do nothing if bookmark is
 present."
   (if (bm-bookmark-at (point))
       nil				; bookmark exists
@@ -426,7 +426,7 @@ present."
       (overlay-put bookmark 'evaporate t)
       (overlay-put bookmark 'category 'bm)
       (if bm-annotate-on-create
-          (bm-bookmark-annotate bookmark))
+          (bm-bookmark-annotate bookmark annotation))
       (unless (featurep 'xemacs)
 	;; gnu emacs specific features
 	(overlay-put bookmark 'priority bm-priority)
@@ -626,11 +626,16 @@ A bookmark implementation of `overlay-list'."
   (interactive "r")
   (let ((regexp (read-from-minibuffer 
 		 "regexp: " nil nil nil 'bm-regexp-history))
+        (annotation nil)
         (count 0))
     (save-excursion
+      (if bm-annotate-on-create 
+          (setq annotation (read-from-minibuffer 
+                            "Annotation: " nil nil nil 'bm-annotation-history)))
+
       (goto-char beg)
       (while (re-search-forward regexp end t)
-	(bm-bookmark-add)
+	(bm-bookmark-add annotation)
         (setq count (1+ count))
 	(forward-line 1)))
     (message "%d bookmark(s) created." count)))
@@ -647,15 +652,15 @@ A bookmark implementation of `overlay-list'."
       (bm-bookmark-add))))
   
 
-(defun bm-extract nil
-  "Extract bookmarked lines to the *bm-extract* buffer."
+(defun bm-show nil
+  "Show bookmarked lines to the *bm-bookmarks* buffer."
   (interactive)
   (if (= (bm-count) 0)
       (message "No bookmarks defined.")
     (let* ((bookmarks (bm-lists))
 	   (lines (mapconcat
 		   '(lambda (bm)
-		      (let ((string (format bm-extract-format-string
+		      (let ((string (format bm-show-format-string
 					    (count-lines (point-min) (overlay-start bm))
                                             (let ((annotation (overlay-get bm 'annotation)))
                                               (if (null annotation) "" annotation))
@@ -671,17 +676,17 @@ A bookmark implementation of `overlay-list'."
 		      (reverse (car bookmarks))) 
 		    (cdr bookmarks)) "")))
       ;; set output buffer
-      (with-output-to-temp-buffer "*bm-extract*"
+      (with-output-to-temp-buffer "*bm-bookmarks*"
 	(set-buffer standard-output)
-	(insert (format bm-extract-header-string "Line:" "Annotation:" "Content:") "\n")
+	(insert (format bm-show-header-string "Line:" "Annotation:" "Content:") "\n")
 	(insert lines)
-	(bm-extract-mode)
+	(bm-show-mode)
 	(setq buffer-read-only t)
 	))))
 
 
-(defun bm-extract-goto-bookmark nil
-  "Goto the bookmark on current line in the *bm-extract* buffer."
+(defun bm-show-goto-bookmark nil
+  "Goto the bookmark on current line in the *bm-bookmarks* buffer."
   (interactive)
   (let ((buffer-name (get-text-property (point) 'bm-buffer))
 	(bookmark (get-text-property (point) 'bm-bookmark)))
@@ -691,8 +696,8 @@ A bookmark implementation of `overlay-list'."
       (bm-goto bookmark))))
 
 
-(defun bm-extract-show-bookmark nil
-  "Show the bookmark on current line in the *bm-extract* buffer."
+(defun bm-show-bookmark nil
+  "Show the bookmark on current line in the *bm-bookmarks* buffer."
   (interactive)
   (let ((buffer-name (get-text-property (point) 'bm-buffer))
 	(bookmark (get-text-property (point) 'bm-bookmark)))
@@ -704,21 +709,21 @@ A bookmark implementation of `overlay-list'."
 	(pop-to-buffer current-buffer)))))
 
 
-(defvar bm-extract-mode-map
+(defvar bm-show-mode-map
   (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "RET") 'bm-extract-goto-bookmark)
-    (define-key map (kbd "SPC") 'bm-extract-show-bookmark)
+    (define-key map (kbd "RET") 'bm-show-goto-bookmark)
+    (define-key map (kbd "SPC") 'bm-show-bookmark)
     map)
-  "Keymap for `bm-extract-mode'.")
+  "Keymap for `bm-show-mode'.")
 
 
-(defun bm-extract-mode nil
-  "Major mode for `bm-extract' buffers."
+(defun bm-show-mode nil
+  "Major mode for `bm-show' buffers."
   (interactive)
   (kill-all-local-variables)
-  (setq major-mode 'bm-extract-mode)
-  (setq mode-name "Extract")
-  (use-local-map bm-extract-mode-map))
+  (setq major-mode 'bm-show-mode)
+  (setq mode-name "bm-bookmarks")
+  (use-local-map bm-show-mode-map))
 
 
 (defun bm-toggle-buffer-persistence nil
