@@ -185,6 +185,25 @@
 ;;
 
 
+;;; Change log:
+;;
+;;  Changes since 1.32
+;;   - Added change log.
+;;
+;;  Changes in 1.31
+;;   - Renamed function `bm-extract' to `bm-show'
+;;   - Fixed annotation bug in `bm-bookmark-regexp-region'.
+;;
+;;  Changes in 1.30
+;;   - New format on file repository.
+;;   - Support for annotation of bookmarks. See variable `bm-annotate-on-create', 
+;;     `bm-bookmark-annotate' and `bm-bookmark-show-annotation'.
+;;   - Added context to help restoring bookmarks correctly, 
+;;     see `bm-bookmark-context-size'.
+;;   - Renamed function `bm-repository-empty' to `bm-repositoty-clear'.
+;;
+
+
 ;;; Todo:
 ;;
 ;;  - Prevent the bookmark (overlay) from being extended when
