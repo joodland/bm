@@ -2,13 +2,13 @@
 
 ;; Copyrigth (C) 2000-2008  Jo Odland
 
-;; Author: Jo Odland <jood@online.no>
+;; Author: Jo Odland <jo.odland(at)gmail.com>
 ;; Version: $Id$
 ;; Keywords; bookmark, highlight, faces, persistent
 ;; URL: http://www.nongnu.org/bm/
 
 ;; Portions Copyright (C) 2002 by Ben Key
-;; Updated by Ben Key <bkey1@tampabay.rr.com> on 2002-12-05
+;; Updated by Ben Key <bkey1(at)tampabay.rr.com> on 2002-12-05
 ;; to add support for XEmacs
 
 
@@ -182,20 +182,22 @@
 ;;; Acknowledgements:
 ;;
 ;;  - The use of overlays for bookmarks was inspired by highline.el by
-;;    Vinicius Jose Latorre <vinicius@cpqd.com.br>.
+;;    Vinicius Jose Latorre <vinicius(at)cpqd.com.br>.
 ;;  - Thanks to Ben Key for XEmacs support.
 ;;  - Thanks to Peter Heslin for notifying me on the incompability with
 ;;    lazy-lock.
 ;;  - Thanks to Christoph Conrad for adding support for goto line position
 ;;    in bookmarks and simpler wrapping.
 ;;  - Thanks to Jan Rehders for adding support for different bookmark styles.
-;;
+;;  - Thanks to Dan McKinley <mcfunley(at)gmail.com> for inspiration to add support
+;;    for listing bookmarks in all buffers, `bm-show-all'. 
+;;    (http://www.emacswiki.org/cgi-bin/wiki/bm-ext.el)
 
 
 ;;; Change log:
 
-;;  Changes singe 1.33
-;;   - Added support for bookmarks in fringe (Patch from Jan Rehders <cmdkeen@gmx.de>)
+;;  Changes singe 1.34
+;;   - Added support for bookmarks in fringe (Patch from Jan Rehders <cmdkeen(at)gmx.de>)
 ;;   - Fixed bugs with `bm-next', `bm-previous' and `bm-goto'.
 ;;   - Removed line format variables, `bm-show-header-string' and `bm-show-format-string'.
 ;;   - Added `bm-show-all' for displaying bookmarks in all buffers..
