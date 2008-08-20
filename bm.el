@@ -1,6 +1,6 @@
 ;;; bm.el  -- Visible bookmarks in buffer.
 
-;; Copyrigth (C) 2000-2006  Jo Odland
+;; Copyrigth (C) 2000-2008  Jo Odland
 
 ;; Author: Jo Odland <jood@online.no>
 ;; Version: $Id$
@@ -41,13 +41,16 @@
 ;;   to jump forward and backward to the next bookmark.
 ;;
 ;;   Features:
+;;    - Toggle bookmarks with `bm-toggle' and navigate forward and 
+;;      backward in buffer with `bm-next' and `bm-previous'.
+;;
 ;;    - Different wrapping modes, see `bm-wrap-search' and `bm-wrap-immediately'. 
 ;;      Use `bm-toggle-wrapping' to turn wrapping on/off.
 ;;
 ;;    - Setting bookmarks based on a regexp, see `bm-bookmark-regexp' and 
 ;;      `bm-bookmark-regexp-region'.
 ;;
-;;    - Bookmark line based on line number, see `bm-bookmark-line'.
+;;    - Setting bookmark based on line number, see `bm-bookmark-line'.
 ;;
 ;;    - Goto line position or start of line, see `bm-goto-position'.
 ;;
@@ -55,23 +58,26 @@
 ;;      to enable/disable persistent bookmarks (buffer local).
 ;;
 ;;    - List bookmarks with annotations and context in a separate buffer, 
-;;      see `bm-show'.
+;;      see `bm-show' (current buffer) and `bm-show-all' (all buffers).
 ;;
 ;;    - Annotate bookmarks, see `bm-bookmark-annotate' and `bm-bookmark-show-annotation'.
-;;      Set the variable `bm-annotate-on-create' to t to be prompted for
-;;      an annotation when bookmark is created.
+;;      The annotation is displayed in the messsage area when navigating to a bookmark.
+;;      Set the variable `bm-annotate-on-create' to t to be prompted for an annotation 
+;;      when bookmark is created. 
 ;;
+;;    - Different bookmark styles, fringe-only, line-only or both,
+;;      see `bm-highlight-style'.
 
 
 ;;; Known limitations:
 ;;
-;;   This package is developed and testet on GNU Emacs 21.3. It should
+;;   This package is developed and testet on GNU Emacs 22.1. It should
 ;;   work on all GNU Emacs 21.x and also on XEmacs 21.x with some
 ;;   limitations.
 ;;
 ;;   There are some incompabilities with lazy-lock when using
 ;;   fill-paragraph. All bookmark below the paragraph being filled
-;;   will be lost. This issue can be resolved using the jit-lock-mode
+;;   will be lost. This issue can be resolved using the `jit-lock-mode'
 ;;   introduced in GNU Emacs 21.1
 ;;
 
@@ -182,10 +188,17 @@
 ;;    lazy-lock.
 ;;  - Thanks to Christoph Conrad for adding support for goto line position
 ;;    in bookmarks and simpler wrapping.
+;;  - Thanks to Jan Rehders for adding support for different bookmark styles.
 ;;
 
 
 ;;; Change log:
+
+;;  Changes singe 1.33
+;;   - Added support for bookmarks in fringe (Patch from Jan Rehders <cmdkeen@gmx.de>)
+;;   - Fixed bugs with `bm-next', `bm-previous' and `bm-goto'.
+;;   - Removed line format variables, `bm-show-header-string' and `bm-show-format-string'.
+;;   - Added `bm-show-all' for displaying bookmarks in all buffers..
 ;;
 ;;  Changes since 1.32
 ;;   - Added change log.
@@ -234,6 +247,12 @@
   :group 'editing
   :prefix "bm-")
 
+(defcustom bm-highlight-style 'bm-highlight-only-line
+  "*Specify how bookmars are highlighted"
+  :type '(choice (const bm-highlight-only-line)
+                 (const bm-highlight-only-fringe)
+                 (const bm-highlight-line-and-fringe))
+  :group 'bm)
 
 (defcustom bm-face 'bm-face
   "*Specify face used to highlight the current line."
@@ -246,7 +265,6 @@
 persistent."
   :type 'face
   :group 'bm)
-
 
 (defcustom bm-priority 0
   "*Specify bm overlay priority.
@@ -280,6 +298,42 @@ over overlays with lower priority.  *Don't* use negative number."
     (((class color) 
       (background dark))  (:foreground "White" :background "DarkBlue")))
   "Face used to highlight current line if bookmark is persistent."
+  :group 'bm)
+
+
+(defcustom bm-fringe-face 'bm-fringe-face
+  "*Specify face used to highlight the fringe."
+  :type 'face
+  :group 'bm)
+
+(defcustom bm-fringe-persistent-face 'bm-fringe-persistent-face
+  "*Specify face used to highlight the fringe when bookmark is
+persistent."
+  :type 'face
+  :group 'bm)
+
+(defface bm-fringe-face
+  '((((class grayscale) 
+      (background light)) (:background "DimGray"))
+    (((class grayscale) 
+      (background dark))  (:background "LightGray"))
+    (((class color) 
+      (background light)) (:foreground "White" :background "DarkOrange1"))
+    (((class color) 
+      (background dark))  (:foreground "Black" :background "DarkOrange1")))
+  "Face used to highlight bookmarks in the fringe."
+  :group 'bm)
+
+(defface bm-fringe-persistent-face
+  '((((class grayscale) 
+      (background light)) (:background "DimGray"))
+    (((class grayscale) 
+      (background dark))  (:background "LightGray"))
+    (((class color) 
+      (background light)) (:foreground "White" :background "DarkBlue"))
+    (((class color) 
+      (background dark))  (:foreground "White" :background "DarkBlue")))
+  "Face used to highlight bookmarks in the fringe if bookmark is persistent."
   :group 'bm)
 
 
@@ -384,12 +438,8 @@ before bm is loaded. ")
 (defvar bm-wrapped nil
   "State variable to support wrapping.")
 
-(defvar bm-show-header-string "%5s %-20s %s"
-  "The bookmark header format.")
 
-(defvar bm-show-format-string "%5d %-20s %s"
-  "The bookmark line format.")
-
+(define-fringe-bitmap 'bm-marker [0 0 252 254 15 254 252 0])
 
 
 (defun bm-customize nil
@@ -429,21 +479,38 @@ specified with the optional parameter."
             (message "No annotation for current bookmark."))))
     (message "No bookmark at current line.")))
 
+(defun bm-line-highlighted ()
+  "Test if line is highlighted."
+  (or (equal bm-highlight-style 'bm-highlight-only-line)
+      (equal bm-highlight-style 'bm-highlight-line-and-fringe)))
+
+(defun bm-fringe-highlighted ()
+  "Test if fringe is highlighted."
+  (or (equal bm-highlight-style 'bm-highlight-only-fringe)
+      (equal bm-highlight-style 'bm-highlight-line-and-fringe)))
 
 (defun bm-bookmark-add (&optional annotation)
   "Add bookmark at current line. Do nothing if bookmark is
 present."
   (if (bm-bookmark-at (point))
       nil				; bookmark exists
-    (let ((bookmark (make-overlay (bm-start-position) (bm-end-position))))
+    (let ((bookmark (make-overlay (bm-start-position) (bm-end-position)))
+          (hlface (if bm-buffer-persistence bm-persistent-face bm-face))
+          (hlface-fringe (if bm-buffer-persistence bm-fringe-persistent-face bm-fringe-face)))
       ;; set market
       (overlay-put bookmark 'position (point-marker))
       ;; select bookmark face
-      (if bm-buffer-persistence
-	  (overlay-put bookmark 'face bm-persistent-face)
-	(overlay-put bookmark 'face bm-face))
+      (when (bm-line-highlighted)
+        (overlay-put bookmark 'face hlface))
       (overlay-put bookmark 'evaporate t)
       (overlay-put bookmark 'category 'bm)
+      (when (bm-fringe-highlighted)
+        (let* ((marker-string "*fringe-dummy*")
+               (marker-length (length marker-string)))
+          (put-text-property 0 marker-length 'display
+                             (list 'left-fringe 'bm-marker hlface-fringe)
+                             marker-string)
+          (overlay-put bookmark 'before-string marker-string)))
       (if bm-annotate-on-create
           (bm-bookmark-annotate bookmark annotation))
       (unless (featurep 'xemacs)
@@ -570,8 +637,11 @@ A bookmark implementation of `overlay-list'."
             (if (or bm-wrapped bm-wrap-immediately)
                 (progn
                   (goto-char (point-min))
-                  (bm-next)
-                  (message "Wrapped."))
+                  (message "Wrapped.")
+                  (if (bm-bookmark-at (point))
+                      ;; bookmark at beginning of buffer, stop looking
+                      nil
+                    (bm-next)))
               (setq bm-wrapped t)       ; wrap on next goto
               (message "Failed: No next bookmark."))
           (message "No next bookmark."))))))
@@ -595,8 +665,11 @@ A bookmark implementation of `overlay-list'."
             (if (or bm-wrapped bm-wrap-immediately)
                 (progn
                   (goto-char (point-max))
-                  (bm-previous)
-                  (message "Wrapped."))
+                  (message "Wrapped.")
+                  (if (bm-bookmark-at (point))
+                      ;; bookmark at end of buffer, stop looking
+                      nil
+                    (bm-previous)))
               (setq bm-wrapped t)       ; wrap on next goto
               (message "Failed: No previous bookmark."))
           (message "No previous bookmark."))))))
@@ -623,7 +696,7 @@ A bookmark implementation of `overlay-list'."
   (if (bm-bookmarkp bookmark)
       (progn
         (if bm-goto-position
-            (goto-char (overlay-get bookmark 'position))
+            (goto-char (marker-position (overlay-get bookmark 'position)))
           (goto-char (overlay-start bookmark)))
         (setq bm-wrapped nil)           ; turn off wrapped state
 	(if bm-recenter
@@ -671,37 +744,56 @@ A bookmark implementation of `overlay-list'."
       (bm-bookmark-add))))
   
 
-(defun bm-show nil
-  "Show bookmarked lines to the *bm-bookmarks* buffer."
+(defun bm-show-all nil
+  "Show bookmarked lines in all buffers."
   (interactive)
-  (if (= (bm-count) 0)
+  (let ((lines 
+         (save-excursion
+           (mapconcat '(lambda (buffer)
+                         (set-buffer buffer)
+                         (bm-show-extract-bookmarks))
+                      (buffer-list) ""))))
+    (bm-show-display-lines lines)))
+
+
+(defun bm-show nil
+  "Show bookmarked lines in current buffer."
+  (interactive)
+  (bm-show-display-lines (bm-show-extract-bookmarks)))
+
+
+(defun bm-show-extract-bookmarks nil
+  "Extract bookmarks from current buffer."
+  (let ((bookmarks (bm-lists)))
+    (mapconcat
+     '(lambda (bm)
+        (let ((string 
+               (format "%-20s %-20s %s"
+                       (format "%s:%d" (buffer-name) (count-lines (point-min) (overlay-start bm)))
+                       (let ((annotation (overlay-get bm 'annotation)))
+                         (if (null annotation) "" annotation))
+                       (buffer-substring (overlay-start bm) (overlay-end bm)))))
+          (put-text-property 0 (length string) 'bm-buffer  (buffer-name)  string)
+          (put-text-property 0 (length string) 'bm-bookmark  bm  string)
+          string))
+     (append
+      ;; xemacs has the list sorted after buffer position, while
+      ;; gnu emacs list is sorted relative to current position.
+      (if (featurep 'xemacs) 
+          (car bookmarks) 
+        (reverse (car bookmarks))) 
+      (cdr bookmarks)) "")))
+
+
+(defun bm-show-display-lines (lines)
+  "Show bookmarked lines to the *bm-bookmarks* buffer."
+  (if (= (length lines) 0)
       (message "No bookmarks defined.")
-    (let* ((bookmarks (bm-lists))
-	   (lines (mapconcat
-		   '(lambda (bm)
-		      (let ((string (format bm-show-format-string
-					    (count-lines (point-min) (overlay-start bm))
-                                            (let ((annotation (overlay-get bm 'annotation)))
-                                              (if (null annotation) "" annotation))
-					    (buffer-substring (overlay-start bm) (overlay-end bm)))))
-			(put-text-property 0 (length string) 'bm-buffer  (buffer-name)  string)
-			(put-text-property 0 (length string) 'bm-bookmark  bm  string)
-			string))
-		   (append
-		    ;; xemacs has the list sorted after buffer position, while
-		    ;; gnu emacs list is sorted relative to current position.
-		    (if (featurep 'xemacs) 
-			(car bookmarks) 
-		      (reverse (car bookmarks))) 
-		    (cdr bookmarks)) "")))
-      ;; set output buffer
-      (with-output-to-temp-buffer "*bm-bookmarks*"
-	(set-buffer standard-output)
-	(insert (format bm-show-header-string "Line:" "Annotation:" "Content:") "\n")
-	(insert lines)
-	(bm-show-mode)
-	(setq buffer-read-only t)
-	))))
+    (with-output-to-temp-buffer "*bm-bookmarks*"
+      (set-buffer standard-output)
+      (insert lines)
+      (bm-show-mode)
+      (setq buffer-read-only t))))
 
 
 (defun bm-show-goto-bookmark nil
