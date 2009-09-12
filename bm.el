@@ -1,6 +1,6 @@
-;;; bm.el  -- Visible bookmarks in buffer.
+c;;; bm.el  -- Visible bookmarks in buffer.
 
-;; Copyrigth (C) 2000-2008  Jo Odland
+;; Copyrigth (C) 2000-2009  Jo Odland
 
 ;; Author: Jo Odland <jo.odland(at)gmail.com>
 ;; Version: $Id$
@@ -71,7 +71,7 @@
 
 ;;; Known limitations:
 ;;
-;;   This package is developed and testet on GNU Emacs 22.1. It should
+;;   This package is developed and testet on GNU Emacs 22.x. It should
 ;;   work on all GNU Emacs 21.x and also on XEmacs 21.x with some
 ;;   limitations.
 ;;
@@ -116,9 +116,12 @@
 ;;   repository is controlled by `bm-repository-size'.
 ;;
 ;;   The buffer local variable `bm-buffer-persistence' decides if
-;;   bookmarks in a buffer is persistent or not. Bookmarks are
-;;   non-persistent as default. To have bookmarks persistent as
-;;   default add the following line to .emacs.
+;;   bookmarks in a buffer is persistent or not. Non-file buffers
+;;   can't have persistent bookmarks, except for *info* and
+;;   indirect buffers.
+;;
+;;   Bookmarks are non-persistent as default. To have bookmarks
+;;   persistent as default add the following line to .emacs.
 ;;
 ;;   ;; make bookmarks persistent as default
 ;;   (setq-default bm-buffer-persistence t)
@@ -166,7 +169,7 @@
 ;;
 ;;   The `after-save-hook' and `after-revert-hook' is not necessary to
 ;;   use to achieve persistence, but it makes the bookmark data in
-;;   repository more connected to the file state. 
+;;   repository more in sync with the file state. 
 ;;
 ;;   The `after-revert-hook' might cause trouble when using packages
 ;;   that automatically reverts the buffer (like vc after a check-in).
@@ -196,13 +199,22 @@
 
 ;;; Change log:
 
-;;  Changes singe 1.34
+;;  Changes in 1.36
+;;   - Added support for persistent bookmarks in non-file buffers (Info buffers, indirect-buffers).
+;;   - Fixed bug(#26077) - bm asks for annotation when restoring bookmarks for bookmarks which 
+;;     already have an annotation.
+
+;;  Changes in 1.35
+;;   - Added utf-8 encoding on `bm-repository-file'
+;;   - Removed compile check on fringe support.
+
+;;  Changes in 1.34
 ;;   - Added support for bookmarks in fringe (Patch from Jan Rehders <cmdkeen(at)gmx.de>)
 ;;   - Fixed bugs with `bm-next', `bm-previous' and `bm-goto'.
 ;;   - Removed line format variables, `bm-show-header-string' and `bm-show-format-string'.
 ;;   - Added `bm-show-all' for displaying bookmarks in all buffers..
 ;;
-;;  Changes since 1.32
+;;  Changes in 1.32
 ;;   - Added change log.
 ;;
 ;;  Changes in 1.31
@@ -230,8 +242,11 @@
 ;;; Code:
 ;;
 
-;; xemacs needs overlay emulation package
 (eval-and-compile
+  ;; avoid compile waring on unbound variable
+  (require 'info)
+
+  ;; xemacs needs overlay emulation package
   (unless (fboundp 'overlay-lists)
     (require 'overlay)))
 
@@ -460,10 +475,8 @@ optional parameter."
   (if (bm-bookmarkp bookmark)
       (progn
         (if (null annotation)
-            (setq annotation (read-from-minibuffer 
-                              "Annotation: " nil nil nil 'bm-annotation-history)))
-        (overlay-put bookmark 'annotation annotation))
-    (if (interactive-p) (message "No bookmark at point"))))
+            (setq annotation (read-from-minibuffer "Annotation: " nil nil nil 'bm-annotation-history)))
+        (overlay-put bookmark 'annotation annotation))    (if (interactive-p) (message "No bookmark at point"))))
     
 
 (defun bm-bookmark-show-annotation (&optional bookmark)
@@ -513,7 +526,7 @@ present."
                              (list 'left-fringe 'bm-marker hlface-fringe)
                              marker-string)
           (overlay-put bookmark 'before-string marker-string)))
-      (if bm-annotate-on-create
+      (if (or bm-annotate-on-create annotation)
           (bm-bookmark-annotate bookmark annotation))
       (unless (featurep 'xemacs)
 	;; gnu emacs specific features
@@ -846,12 +859,15 @@ A bookmark implementation of `overlay-list'."
       ;; turn off
       (progn
 	(setq bm-buffer-persistence nil)
-	(bm-repository-remove (buffer-file-name)) ; remove from repository
+	(bm-repository-remove (bm-buffer-file-name)) ; remove from repository
 	(message "Bookmarks in buffer are not persistent"))
     ;; turn on
-    (setq bm-buffer-persistence (not bm-buffer-persistence))
-    (bm-buffer-save)			; add to repository
-    (message "Bookmarks in buffer are persistent"))
+    (if (not (null (bm-buffer-file-name)))
+        (progn
+          (setq bm-buffer-persistence (not bm-buffer-persistence))
+          (bm-buffer-save)			; add to repository
+          (message "Bookmarks in buffer are persistent"))
+      (message "Unable to set persistent mode on a non-file buffer.")))
 
   ;; change color on bookmarks
   (let ((bookmarks (bm-lists)))
@@ -887,7 +903,7 @@ bookmark we use it, otherwise we use the context after."
 (defun bm-buffer-restore nil
   "Restore bookmarks saved in the repository for the current buffer."
   (interactive)
-  (let ((buffer-data (assoc (buffer-file-name) bm-repository)))
+  (let ((buffer-data (assoc (bm-buffer-file-name) bm-repository)))
     (if buffer-data
         (let ((version (cdr (assoc 'version buffer-data))))
           (cond ((= version 2)
@@ -962,9 +978,7 @@ bookmark we use it, otherwise we use the context after."
                      (> (point-max) pos))
                 nil		; outside buffer, skip bookmark
               (goto-char pos)
-              (setq bm (bm-bookmark-add))
-              (if annotation 
-                  (bm-bookmark-annotate bm annotation))
+              (setq bm (bm-bookmark-add annotation))
               (setq count (1+ count))
               (setq bookmarks (cdr bookmarks))))))
       
@@ -976,46 +990,50 @@ bookmark we use it, otherwise we use the context after."
 (defun bm-buffer-save nil
   "Save all bookmarks to repository."
   (interactive)
-  (if bm-buffer-persistence
-      (let ((buffer-data 
-	     (list 
-	      (buffer-file-name)
-              (cons 'version bm-bookmark-repository-version)
-	      (cons 'size (point-max))
-	      (cons 'timestamp (current-time))
-              (cons 'bookmarks 
-                    (let ((bookmarks (bm-lists)))
-                      (mapcar 
-                       '(lambda (bm)
-                          (let ((position (marker-position (overlay-get bm 'position))))
-                            (list
-                             (cons 'position position)
-                             (cons 'annotation (overlay-get bm 'annotation))
-                             (cons 'before-context-string
-                                   (if (>= (point-min) (- position bm-bookmark-context-size))
-                                       nil
-                                     (buffer-substring-no-properties
-                                      (- position bm-bookmark-context-size) position)))
-                             (cons 'after-context-string
-                                   (if (>= (+ position bm-bookmark-context-size) (point-max))
-                                       nil
-                                     (buffer-substring-no-properties
-                                      position (+ position bm-bookmark-context-size))))
-                             )))
-                       (append (car bookmarks) (cdr bookmarks))))))))
+  (if (not (null (bm-buffer-file-name)))
+      (if bm-buffer-persistence 
+          (let ((buffer-data 
+                 (list 
+                  (bm-buffer-file-name)
+                  (cons 'version bm-bookmark-repository-version)
+                  (cons 'size (point-max))
+                  (cons 'timestamp (current-time))
+                  (cons 'bookmarks 
+                        (let ((bookmarks (bm-lists)))
+                          (mapcar 
+                           '(lambda (bm)
+                              (let ((position (marker-position (overlay-get bm 'position))))
+                                (list
+                                 (cons 'position position)
+                                 (cons 'annotation (overlay-get bm 'annotation))
+                                 (cons 'before-context-string
+                                       (if (>= (point-min) (- position bm-bookmark-context-size))
+                                           nil
+                                         (buffer-substring-no-properties
+                                          (- position bm-bookmark-context-size) position)))
+                                 (cons 'after-context-string
+                                       (if (>= (+ position bm-bookmark-context-size) (point-max))
+                                           nil
+                                         (buffer-substring-no-properties
+                                          position (+ position bm-bookmark-context-size))))
+                                 )))
+                           (append (car bookmarks) (cdr bookmarks))))))))
+            
+            ;; remove if exists
+            (bm-repository-remove (car buffer-data))
+            
+            ;; add if there exists bookmarks
+            (let ((count (length (cdr (assoc 'bookmarks buffer-data))))) 
+              (if (> count 0)
+                  (bm-repository-add buffer-data))
+              (if (interactive-p)
+                  (message "%d bookmark(s) saved to repository." count))))
+        
+        (if (interactive-p)
+            (message "No bookmarks saved. Buffer is not persistent.")))
 
-	;; remove if exists
-	(bm-repository-remove (car buffer-data))
-
-	;; add if there exists bookmarks
-	(let ((count (length (cdr (assoc 'bookmarks buffer-data))))) 
-	  (if (> count 0)
-	      (bm-repository-add buffer-data))
-	  (if (interactive-p)
-	      (message "%d bookmark(s) saved to repository." count))))
-    
     (if (interactive-p)
-	(message "Bookmarks in buffer are not persistent."))))
+        (message "Unable to save bookmarks in non-file buffers."))))
 
 
 (defun bm-buffer-save-all nil
@@ -1101,6 +1119,15 @@ bookmark we use it, otherwise we use the context after."
   (bm-buffer-save-all)
   (bm-repository-save))
   
+
+(defun bm-buffer-file-name nil
+  "Get a unique key for the repository, even for non-file buffers."
+  (cond ((equal 'Info-mode major-mode)
+         (concat "[info:" Info-current-file "]"))
+        ((not (null (buffer-base-buffer)))
+         (concat "[indirect:" (buffer-name) ":" (buffer-file-name (buffer-base-buffer)) "]"))
+        (t (buffer-file-name))))
+
 
 ;; restore repository on load
 (if bm-restore-repository-on-load
