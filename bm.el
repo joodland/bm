@@ -66,14 +66,18 @@
 ;;      when bookmark is created. 
 ;;
 ;;    - Different bookmark styles, fringe-only, line-only or both,
-;;      see `bm-highlight-style'.
+;;      see `bm-highlight-style'. It is possible to have fringe-markers on left or right side. 
+;;      See `bm-fringe-markers-on-right'
+;;
+;;    - Search for bookmarks only in current buffer or cycle through all buffers. 
+;;      Use `bm-cycle-all-buffers' to enable looking for bookmarks across all open buffers.
 
 
 ;;; Known limitations:
 ;;
 ;;   This package is developed and testet on GNU Emacs 22.x. It should
-;;   work on all GNU Emacs 21.x and also on XEmacs 21.x with some
-;;   limitations.
+;;   work on all GNU Emacs 21.x, GNU Emacs 23.x and also on XEmacs
+;;   21.x with some limitations.
 ;;
 ;;   There are some incompabilities with lazy-lock when using
 ;;   fill-paragraph. All bookmark below the paragraph being filled
@@ -106,6 +110,18 @@
 ;;     (global-set-key (kbd "<f2>")   'bm-next)
 ;;     (global-set-key (kbd "<S-f2>") 'bm-previous)
 ;;
+;;   Click on fringe to toggle bookmarks, and use mouse wheel to move
+;;   between them.
+;;     (global-set-key (kbd "<left-fringe> <mouse-5>") 'bm-next-mouse)
+;;     (global-set-key (kbd "<left-fringe> <mouse-4>") 'bm-previous-mouse)
+;;     (global-set-key (kbd "<left-fringe> <mouse-1>") 'bm-toggle-mouse)
+;;
+;;   If you would like the markers on the right fringe instead of the
+;;   left, use bm-fringe-markers-on-right.
+;;
+;;   (setq bm-marker 'bm-marker-right)
+;;
+
 
 
 ;;; Persistence:
@@ -195,9 +211,17 @@
 ;;  - Thanks to Dan McKinley <mcfunley(at)gmail.com> for inspiration to add support
 ;;    for listing bookmarks in all buffers, `bm-show-all'. 
 ;;    (http://www.emacswiki.org/cgi-bin/wiki/bm-ext.el)
+;;  - Thanks to Jonathan Kotta <jpkotta(at)gmail.com> for mouse support and fringe 
+;;    markers on left or right side.
 
 
 ;;; Change log:
+
+;;  Changes in 1.38
+;;   - Added support for bookmark search across buffers. See `bm-cycle-all-buffers'.
+;;   - Added support for mouse navigation (#28863). See `bm-toggle-mouse', `bm-next-mouse' 
+;;     and `bm-previous-mouse'.
+;;   - Added support for markers on the right fringe (#28863). See `bm-fringe-markers-on-right'.
 
 ;;  Changes in 1.36
 ;;   - Added support for persistent bookmarks in non-file buffers (Info buffers, indirect-buffers).
@@ -381,6 +405,14 @@ t, don't announce."
   :type 'boolean
   :group 'bm)
 
+(defcustom bm-cycle-all-buffers nil
+ "*Specify if bookmark search is done across buffers. This will ignore the
+`bm-wrap-search' setting.
+
+nil, only search in current buffer.
+t, search in all open buffers."
+ :type 'boolean
+ :group 'bm)
 
 (defcustom bm-recenter nil
   "*Specify if the buffer should be recentered around the bookmark
@@ -454,10 +486,23 @@ before bm is loaded. ")
 
 (defvar bm-wrapped nil
   "State variable to support wrapping.")
+(make-variable-buffer-local 'bm-wrapped)
 
+(defvar bm-marker 'bm-marker-left
+  "Fringe marker side. Left of right.")
 
-(define-fringe-bitmap 'bm-marker [0 0 252 254 15 254 252 0])
+(define-fringe-bitmap 'bm-marker-left 
+  [#x00 #x00 #xFC #xFE #x0F #xFE #xFC #x00])
+(define-fringe-bitmap 'bm-marker-right
+  [#x00 #x00 #x3F #x7F #xF0 #x7F #x3F #x00])
 
+(defun bm-fringe-markers-on-right (arg)
+  "Sets the fringe marker on the right side if called with an argument, left otherwise."
+  (if arg 
+      (setq bm-marker 'bm-marker-right)
+    (setq bm-marker 'bm-marker-left)))
+
+(bm-fringe-markers-on-right nil)
 
 (defun bm-customize nil
   "Customize bm group"
@@ -523,7 +568,10 @@ present."
         (let* ((marker-string "*fringe-dummy*")
                (marker-length (length marker-string)))
           (put-text-property 0 marker-length 'display
-                             (list 'left-fringe 'bm-marker hlface-fringe)
+                             (list (if (eq bm-marker 'bm-marker-left)
+                                       'left-fringe
+                                     'right-fringe) 
+                                   bm-marker hlface-fringe)
                              marker-string)
           (overlay-put bookmark 'before-string marker-string)))
       (if (or bm-annotate-on-create annotation)
@@ -555,6 +603,15 @@ optional parameter."
     (if bookmark
 	(bm-bookmark-remove bookmark)
       (bm-bookmark-add))))
+
+
+;;;###autoload
+(defun bm-toggle-mouse (ev)
+  "Toggle a bookmark with a mouse click."
+  (interactive "e")
+  (save-excursion
+    (mouse-set-point ev)
+    (bm-toggle)))
 
 
 (defun bm-count nil
@@ -640,7 +697,9 @@ A bookmark implementation of `overlay-list'."
   "Goto next bookmark."
   (interactive)
   (if (= (bm-count) 0)
-      (message "No bookmarks defined.")
+      (if bm-cycle-all-buffers
+          (bm-first-in-next-buffer)
+        (message "No bookmarks defined."))
     (let ((bm-list-forward (cdr (bm-lists 'forward))))
       ;; remove bookmark at point
       (if (bm-equal (bm-bookmark-at (point)) (car bm-list-forward))
@@ -648,19 +707,24 @@ A bookmark implementation of `overlay-list'."
 
       (if bm-list-forward
           (bm-goto (car bm-list-forward))
-        (if bm-wrap-search
-            (if (or bm-wrapped bm-wrap-immediately)
-                (progn
-                  (goto-char (point-min))
-                  (message "Wrapped.")
-                  (if (bm-bookmark-at (point))
-                      ;; bookmark at beginning of buffer, stop looking
-                      nil
-                    (bm-next)))
-              (setq bm-wrapped t)       ; wrap on next goto
-              (message "Failed: No next bookmark."))
-          (message "No next bookmark."))))))
+        (cond (bm-cycle-all-buffers (bm-first-in-next-buffer))
+              (bm-wrap-search (if (or bm-wrapped bm-wrap-immediately)
+                                  (progn
+                                    (bm-first)
+                                    (message "Wrapped."))
+                                (setq bm-wrapped t)       ; wrap on next goto
+                                (message "Failed: No next bookmark.")))
+              (t (message "No next bookmark.")))))))
 
+
+;;;###autoload
+(defun bm-next-mouse (ev)
+  "Go to the next bookmark with the scroll wheel."
+  (interactive "e")
+  (let ((old-selected-window (selected-window)))
+    (select-window (posn-window (event-start ev)))
+    (bm-next)
+    (select-window old-selected-window)))
 
 
 ;;;###autoload
@@ -668,7 +732,9 @@ A bookmark implementation of `overlay-list'."
   "Goto previous bookmark."
   (interactive)
   (if (= (bm-count) 0)
-      (message "No bookmarks defined.")
+      (if bm-cycle-all-buffers
+          (bm-last-in-previous-buffer)
+        (message "No bookmarks defined."))
   (let ((bm-list-backward (car (bm-lists 'backward))))
     ;; remove bookmark at point
     (if (bm-equal (bm-bookmark-at (point)) (car bm-list-backward))
@@ -676,21 +742,100 @@ A bookmark implementation of `overlay-list'."
 
       (if bm-list-backward
           (bm-goto (car bm-list-backward))
-        (if bm-wrap-search
-            (if (or bm-wrapped bm-wrap-immediately)
-                (progn
-                  (goto-char (point-max))
-                  (message "Wrapped.")
-                  (if (bm-bookmark-at (point))
-                      ;; bookmark at end of buffer, stop looking
-                      nil
-                    (bm-previous)))
-              (setq bm-wrapped t)       ; wrap on next goto
-              (message "Failed: No previous bookmark."))
-          (message "No previous bookmark."))))))
+
+        (cond (bm-cycle-all-buffers (bm-last-in-previous-buffer))
+              (bm-wrap-search (if (or bm-wrapped bm-wrap-immediately)
+                                  (progn
+                                    (bm-last)
+                                    (message "Wrapped."))
+                                (setq bm-wrapped t)       ; wrap on next goto
+                                (message "Failed: No previous bookmark.")))
+              (t (message "No previous bookmark.")))))))
 
 
-(defun bm-remove-all nil
+;;;###autoload
+(defun bm-previous-mouse (ev)
+  "Go to the previous bookmark with the scroll wheel."
+  (interactive "e")
+  (let ((old-selected-window (selected-window)))
+    (select-window (posn-window (event-start ev)))
+    (bm-previous)
+    (select-window old-selected-window)))
+
+
+(defun bm-first-in-next-buffer nil
+  "Goto first bookmark in next buffer."
+  (interactive)
+  (let ((buffers 
+         (save-excursion
+           (remq nil (mapcar '(lambda (buffer)
+                                (set-buffer buffer)
+                                (if (> (bm-count) 0)
+                                    buffer
+                                  nil))
+                             ;; drop current buffer from list
+                             (cdr (buffer-list)))))))
+
+    (if buffers
+        (progn
+          (switch-to-buffer (car buffers))
+          (message "Switched to '%s'" (car buffers))
+          (bm-first))
+      (message "No more bookmarks found."))))
+
+
+
+(defun bm-last-in-previous-buffer nil
+  "Goto last bookmark in previous buffer."
+  (interactive)
+  (let ((buffers 
+         (save-excursion
+           (remq nil (mapcar '(lambda (buffer)
+                                (set-buffer buffer)
+                                (if (> (bm-count) 0)
+                                    buffer
+                                  nil))
+                             ;; drop current buffer from list
+                             (reverse (cdr (buffer-list))))))))
+
+    (if buffers
+        (progn 
+          (switch-to-buffer (car buffers))
+          (message "Switched to '%s'" (car buffers))
+          (bm-last))
+      (message "No more bookmarks found."))))
+
+
+(defun bm-first nil
+  "Goto first bookmark in buffer."
+  (goto-char (point-min))
+  (if (bm-bookmark-at (point))
+      ;; bookmark at beginning of buffer, stop looking
+      nil
+    (bm-next)))
+
+
+(defun bm-last nil
+  "Goto first bookmark in buffer."
+  (goto-char (point-max))
+  (if (bm-bookmark-at (point))
+      ;; bookmark at end of buffer, stop looking
+      nil
+    (bm-previous)))
+
+
+(defun bm-remove-all-all-buffers nil
+  "Delete all visible bookmarks in all open buffers."
+  (interactive)
+  (let ((buffers (buffer-list)))
+    (save-excursion
+      (while buffers
+        (set-buffer (car buffers))
+        (bm-remove-all-current-buffer)
+        (setq buffers (cdr buffers))))))
+
+
+(defun bm-remove-all-current-buffer nil
   "Delete all visible bookmarks in current buffer."
   (interactive)
   (let ((bookmarks (bm-lists)))
@@ -698,12 +843,21 @@ A bookmark implementation of `overlay-list'."
 
 
 (defun bm-toggle-wrapping nil
-  "Toggle wrapping on/off, when searching for next bookmark."
+  "Toggle wrapping on/off, when searching for next/previous bookmark."
   (interactive)
   (setq bm-wrap-search (not bm-wrap-search))
   (if bm-wrap-search
       (message "Wrapping on.")
     (message "Wrapping off.")))
+
+
+(defun bm-toggle-cycle-all-buffers nil
+  "Toggle searching across all buffers."
+  (interactive)
+  (setq bm-cycle-all-buffers (not bm-cycle-all-buffers))
+  (if bm-cycle-all-buffers
+      (message "Cycle all buffers on")
+    (message "Cycle all buffers off")))
 
 
 (defun bm-goto (bookmark)
