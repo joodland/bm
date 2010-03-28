@@ -836,14 +836,6 @@ A bookmark implementation of `overlay-list'."
                (bm-remove-all-current-buffer))
             (buffer-list))))
 
-              bm-remove-all-current-buffer (buffer-list)))
-  (let ((buffers (buffer-list)))
-    (save-excursion
-      (while buffers
-        (set-buffer (car buffers))
-        (bm-remove-all-current-buffer)
-        (setq buffers (cdr buffers))))))
-
 
 (defun bm-remove-all-current-buffer nil
   "Delete all visible bookmarks in current buffer."
