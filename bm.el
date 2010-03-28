@@ -6,6 +6,7 @@
 ;; Version: $Id$
 ;; Keywords; bookmark, highlight, faces, persistent
 ;; URL: http://www.nongnu.org/bm/
+;; Project page: https://savannah.nongnu.org/projects/bm/
 
 ;; Portions Copyright (C) 2002 by Ben Key
 ;; Updated by Ben Key <bkey1(at)tampabay.rr.com> on 2002-12-05
@@ -47,6 +48,9 @@
 ;;    - Different wrapping modes, see `bm-wrap-search' and `bm-wrap-immediately'. 
 ;;      Use `bm-toggle-wrapping' to turn wrapping on/off.
 ;;
+;;    - Navigate between bookmarks only in current buffer or cycle through all buffers. 
+;;      Use `bm-cycle-all-buffers' to enable looking for bookmarks across all open buffers.
+;;
 ;;    - Setting bookmarks based on a regexp, see `bm-bookmark-regexp' and 
 ;;      `bm-bookmark-regexp-region'.
 ;;
@@ -60,6 +64,9 @@
 ;;    - List bookmarks with annotations and context in a separate buffer, 
 ;;      see `bm-show' (current buffer) and `bm-show-all' (all buffers).
 ;;
+;;    - Remove all bookmarks in current buffer with `bm-remove-all-current-buffer' and
+;;      all bookmarks in all open buffers with `bm-remove-all-all-buffers'.
+;;
 ;;    - Annotate bookmarks, see `bm-bookmark-annotate' and `bm-bookmark-show-annotation'.
 ;;      The annotation is displayed in the messsage area when navigating to a bookmark.
 ;;      Set the variable `bm-annotate-on-create' to t to be prompted for an annotation 
@@ -69,8 +76,6 @@
 ;;      see `bm-highlight-style'. It is possible to have fringe-markers on left or right side. 
 ;;      See `bm-fringe-markers-on-right'
 ;;
-;;    - Search for bookmarks only in current buffer or cycle through all buffers. 
-;;      Use `bm-cycle-all-buffers' to enable looking for bookmarks across all open buffers.
 
 
 ;;; Known limitations:
@@ -276,7 +281,7 @@
 
 
 (defconst bm-version "$Id$"
-  "RCS version of bm.el")
+  "CVS version of bm.el")
 
 (defconst bm-bookmark-repository-version 2
   "The repository version.")
@@ -491,10 +496,9 @@ before bm is loaded. ")
 (defvar bm-marker 'bm-marker-left
   "Fringe marker side. Left of right.")
 
-(define-fringe-bitmap 'bm-marker-left 
-  [#x00 #x00 #xFC #xFE #x0F #xFE #xFC #x00])
-(define-fringe-bitmap 'bm-marker-right
-  [#x00 #x00 #x3F #x7F #xF0 #x7F #x3F #x00])
+(define-fringe-bitmap 'bm-marker-left   [#x00 #x00 #xFC #xFE #x0F #xFE #xFC #x00])
+(define-fringe-bitmap 'bm-marker-right  [#x00 #x00 #x3F #x7F #xF0 #x7F #x3F #x00])
+
 
 (defun bm-fringe-markers-on-right (arg)
   "Sets the fringe marker on the right side if called with an argument, left otherwise."
@@ -502,7 +506,6 @@ before bm is loaded. ")
       (setq bm-marker 'bm-marker-right)
     (setq bm-marker 'bm-marker-left)))
 
-(bm-fringe-markers-on-right nil)
 
 (defun bm-customize nil
   "Customize bm group"
@@ -827,6 +830,13 @@ A bookmark implementation of `overlay-list'."
 (defun bm-remove-all-all-buffers nil
   "Delete all visible bookmarks in all open buffers."
   (interactive)
+  (save-excursion
+    (mapcar '(lambda (buffer)
+               (set-buffer buffer)
+               (bm-remove-all-current-buffer))
+            (buffer-list))))
+
+              bm-remove-all-current-buffer (buffer-list)))
   (let ((buffers (buffer-list)))
     (save-excursion
       (while buffers
