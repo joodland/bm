@@ -1,4 +1,4 @@
-;;; bm.el  -- Visible bookmarks in buffer.
+;;; bm.el  --- Visible bookmarks in buffer.
 
 ;; Copyrigth (C) 2000-2010  Jo Odland
 
@@ -46,10 +46,12 @@
 ;;      backward in buffer with `bm-next' and `bm-previous'.
 ;;
 ;;    - Different wrapping modes, see `bm-wrap-search' and `bm-wrap-immediately'.
-;;      Use `bm-toggle-wrapping' to turn wrapping on/off.
+;;      Use `bm-toggle-wrapping' to turn wrapping on/off. Wrapping is only available
+;;      when `bm-cycle-all-buffers' is nil.
 ;;
 ;;    - Navigate between bookmarks only in current buffer or cycle through all buffers.
 ;;      Use `bm-cycle-all-buffers' to enable looking for bookmarks across all open buffers.
+;;      When cycling through bookmarks in all open buffers, the search will always wrap around.
 ;;
 ;;    - Setting bookmarks based on a regexp, see `bm-bookmark-regexp' and
 ;;      `bm-bookmark-regexp-region'.
@@ -220,6 +222,10 @@
 
 
 ;;; Change log:
+
+;;  Changes in 1.42
+;;   - Fixed bug(#29536) - Next/previous does not wrap when `bm-cycle-all-buffers' t
+;;     and only bookmarks in one buffer.
 
 ;;  Changes in 1.41
 ;;   - Updated documentation to satisfy `checkdoc'.
@@ -728,15 +734,19 @@ in the specified direction."
       (if bm-list-forward
           (bm-goto (car bm-list-forward))
         (cond (bm-cycle-all-buffers (bm-first-in-next-buffer))
-              (bm-wrap-search (if (or bm-wrapped bm-wrap-immediately)
-                                  (progn
-                                    (bm-first)
-                                    (message "Wrapped."))
-                                (setq bm-wrapped t)       ; wrap on next goto
-                                (message "Failed: No next bookmark.")))
+              (bm-wrap-search (bm-wrap-forward))
               (t (message "No next bookmark.")))))))
 
+(defun bm-wrap-forward nil
+  "Goto next bookmark, wrapping."
+  (if (or bm-wrapped bm-wrap-immediately)
+      (progn
+        (bm-first)
+        (message "Wrapped."))
+    (setq bm-wrapped t)       ; wrap on next goto
+    (message "Failed: No next bookmark.")))
 
+  
 ;;;###autoload
 (defun bm-next-mouse (ev)
   "Go to the next bookmark with the scroll wheel.
@@ -765,13 +775,17 @@ EV is the mouse event."
           (bm-goto (car bm-list-backward))
 
         (cond (bm-cycle-all-buffers (bm-last-in-previous-buffer))
-              (bm-wrap-search (if (or bm-wrapped bm-wrap-immediately)
-                                  (progn
-                                    (bm-last)
-                                    (message "Wrapped."))
-                                (setq bm-wrapped t)       ; wrap on next goto
-                                (message "Failed: No previous bookmark.")))
+              (bm-wrap-search (bm-wrap-backward))
               (t (message "No previous bookmark.")))))))
+
+(defun bm-wrap-backward nil
+  "Goto previous bookmark, wrapping."
+  (if (or bm-wrapped bm-wrap-immediately)
+      (progn
+        (bm-last)
+        (message "Wrapped."))
+    (setq bm-wrapped t)       ; wrap on next goto
+    (message "Failed: No previous bookmark.")))
 
 
 ;;;###autoload
@@ -803,7 +817,11 @@ EV is the mouse event."
           (switch-to-buffer (car buffers))
           (message "Switched to '%s'" (car buffers))
           (bm-first))
-      (message "No more bookmarks found."))))
+      ;; no bookmarks found in other open buffers,
+      ;; wrap in current buffer?
+      (if bm-wrap-search
+          (bm-wrap-forward)
+        (message "No bookmarks found in other open buffers.")))))
 
 
 
@@ -825,7 +843,11 @@ EV is the mouse event."
           (switch-to-buffer (car buffers))
           (message "Switched to '%s'" (car buffers))
           (bm-last))
-      (message "No more bookmarks found."))))
+      ;; no bookmarks found in other open buffers,
+      ;; wrap in current buffer?
+      (if bm-wrap-search
+          (bm-wrap-backward)
+        (message "No bookmarks found in other open buffers.")))))
 
 
 (defun bm-first nil
