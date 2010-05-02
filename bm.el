@@ -81,11 +81,11 @@
 
 ;;; Known limitations:
 ;;
-;;   This package is developed and testet on GNU Emacs 22.x. It should
+;;   This package is developed and tested on GNU Emacs 22.x. It should
 ;;   work on all GNU Emacs 21.x, GNU Emacs 23.x and also on XEmacs
 ;;   21.x with some limitations.
 ;;
-;;   There are some incompabilities with lazy-lock when using
+;;   There are some incompatibilities with lazy-lock when using
 ;;   fill-paragraph. All bookmark below the paragraph being filled
 ;;   will be lost. This issue can be resolved using the `jit-lock-mode'
 ;;   introduced in GNU Emacs 21.1
@@ -219,10 +219,15 @@
 ;;    (http://www.emacswiki.org/cgi-bin/wiki/bm-ext.el)
 ;;  - Thanks to Jonathan Kotta <jpkotta(at)gmail.com> for mouse support and fringe
 ;;    markers on left or right side.
+;;  - Thanks to Juanma Barranquero <lekktu(at)gmail.com> for cleaning up the code and 
+;;    fixing spelling errors.
 
 
 ;;; Change log:
 
+;;  Changes in 1.44 
+;;   - Fixed spelling. Cleaned up some code. Thanks to Juanma Barranquero for patch.
+;;
 ;;  Changes in 1.43
 ;;   - Fixed spelling. Thanks to Juanma Barranquero <lekktu(at)gmail.com> for patch.
 ;;
@@ -283,7 +288,7 @@
 ;;
 
 (eval-and-compile
-  ;; avoid compile waring on unbound variable
+  ;; avoid compile warning on unbound variable
   (require 'info)
 
   ;; xemacs needs overlay emulation package
@@ -326,7 +331,7 @@
   "*Specify bm overlay priority.
 
 Higher integer means higher priority, so bm overlay will have precedence
-over overlays with lower priority.  *Don't* use negative number."
+over overlays with lower priority.  *Don't* use a negative number."
   :type 'integer
   :group 'bm)
 
@@ -526,7 +531,8 @@ If ANNOTATION is provided use this, and not prompt for input."
       (progn
         (if (null annotation)
             (setq annotation (read-from-minibuffer "Annotation: " nil nil nil 'bm-annotation-history)))
-        (overlay-put bookmark 'annotation annotation))    (if (interactive-p) (message "No bookmark at point"))))
+        (overlay-put bookmark 'annotation annotation))
+    (if (interactive-p) (message "No bookmark at point"))))
     
 
 (defun bm-bookmark-show-annotation (&optional bookmark)
@@ -537,11 +543,8 @@ Either the bookmark at point or the BOOKMARK specified as parameter."
       (setq bookmark (bm-bookmark-at (point))))
 
   (if (bm-bookmarkp bookmark)
-      (progn
-        (let ((annotation (overlay-get bookmark 'annotation)))
-          (if annotation
-              (message annotation)
-            (message "No annotation for current bookmark."))))
+      (message (or (overlay-get bookmark 'annotation)
+                   "No annotation for current bookmark."))
     (message "No bookmark at current line.")))
 
 (defun bm-line-highlighted ()
@@ -707,7 +710,7 @@ http://www.gnu.org/s/emacs/manual/html_node/elisp/Overlay-Properties.html"
   "Return a pair of lists giving all the bookmarks of the current buffer.
 The car has all the bookmarks before the overlay center;
 the cdr has all the bookmarks after the overlay center.
-A bookmark implementation of `overlay-list'.
+A bookmark implementation of `overlay-lists'.
 
 If optional argument DIRECTION is provided, only return bookmarks
 in the specified direction."
@@ -986,8 +989,7 @@ Region defined by BEG and END."
         (let ((string
                (format "%-20s %-20s %s"
                        (format "%s:%d" (buffer-name) (count-lines (point-min) (overlay-start bm)))
-                       (let ((annotation (overlay-get bm 'annotation)))
-                         (if (null annotation) "" annotation))
+                       (or (overlay-get bm 'annotation) "")
                        (buffer-substring (overlay-start bm) (overlay-end bm)))))
           (put-text-property 0 (length string) 'bm-buffer  (buffer-name)  string)
           (put-text-property 0 (length string) 'bm-bookmark  bm  string)
