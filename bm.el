@@ -65,6 +65,7 @@
 ;;
 ;;    - List bookmarks with annotations and context in a separate buffer,
 ;;      see `bm-show' (current buffer) and `bm-show-all' (all buffers).
+;;      See `bm-show-mode-map' for key bindings.
 ;;
 ;;    - Remove all bookmarks in current buffer with `bm-remove-all-current-buffer' and
 ;;      all bookmarks in all open buffers with `bm-remove-all-all-buffers'.
@@ -219,17 +220,20 @@
 ;;    (http://www.emacswiki.org/cgi-bin/wiki/bm-ext.el)
 ;;  - Thanks to Jonathan Kotta <jpkotta(at)gmail.com> for mouse support and fringe
 ;;    markers on left or right side.
-;;  - Thanks to Juanma Barranquero <lekktu(at)gmail.com> for cleaning up the code and 
-;;    fixing spelling errors.
+;;  - Thanks to Juanma Barranquero <lekktu(at)gmail.com> for making `bm-show' an 
+;;    electric window, cleaning up the code and fixing spelling errors. 
 
 
 ;;; Change log:
 
+;;  Changes in 1.45
+;;   - Changed `bm-show' to an electric window. Thanks to Juanma Barranquero for patch.
+;; 
 ;;  Changes in 1.44 
 ;;   - Fixed spelling. Cleaned up some code. Thanks to Juanma Barranquero for patch.
 ;;
 ;;  Changes in 1.43
-;;   - Fixed spelling. Thanks to Juanma Barranquero <lekktu(at)gmail.com> for patch.
+;;   - Fixed spelling. Thanks to Juanma Barranquero for patch.
 ;;
 ;;  Changes in 1.42
 ;;   - Fixed bug(#29536) - Next/previous does not wrap when `bm-cycle-all-buffers' t
@@ -424,6 +428,7 @@ t, don't announce."
   :type 'boolean
   :group 'bm)
 
+
 (defcustom bm-cycle-all-buffers nil
  "*Specify if bookmark search is done across buffers.
 This will ignore the `bm-wrap-search' setting.
@@ -444,6 +449,12 @@ t, search in all open buffers."
 
 nil, goto start of line.
 t, goto position on the line where the bookmark was set."
+  :type 'boolean
+  :group 'bm)
+
+
+(defcustom bm-electric-show t
+  "*If t, `bm-show' acts like an electric buffer."
   :type 'boolean
   :group 'bm)
 
@@ -482,7 +493,6 @@ t, restore if possible."
   :type 'boolean
   :group 'bm)
 
-
 (defvar bm-restore-repository-on-load nil
   "Specify if repository should be restored when loading bm.
 
@@ -505,6 +515,9 @@ before bm is loaded.")
 (defvar bm-wrapped nil
   "State variable to support wrapping.")
 (make-variable-buffer-local 'bm-wrapped)
+
+(defconst bm-show-line-format "%-20s %-20s %s"
+  "The format string used by `bm-header' and `bm-show-extract-bookmarks'.")
 
 (defvar bm-marker 'bm-marker-left
   "Fringe marker side. Left of right.")
@@ -963,6 +976,12 @@ Region defined by BEG and END."
       (bm-bookmark-add))))
   
 
+(defun bm-show-quit-window nil
+  "Quit the window displaying *bm-bookmarks*."
+  (interactive)
+  (quit-window nil (get-buffer-window "*bm-bookmarks*")))
+
+
 (defun bm-show-all nil
   "Show bookmarked lines in all buffers."
   (interactive)
@@ -987,7 +1006,7 @@ Region defined by BEG and END."
     (mapconcat
      '(lambda (bm)
         (let ((string
-               (format "%-20s %-20s %s"
+               (format bm-show-line-format
                        (format "%s:%d" (buffer-name) (count-lines (point-min) (overlay-start bm)))
                        (or (overlay-get bm 'annotation) "")
                        (buffer-substring (overlay-start bm) (overlay-end bm)))))
@@ -1011,7 +1030,9 @@ Region defined by BEG and END."
       (set-buffer standard-output)
       (insert lines)
       (bm-show-mode)
-      (setq buffer-read-only t))))
+      (setq buffer-read-only t)
+      (when bm-electric-show
+        (pop-to-buffer (current-buffer))))))
 
 
 (defun bm-show-goto-bookmark nil
@@ -1022,7 +1043,8 @@ Region defined by BEG and END."
     (if (null buffer-name)
 	(message "No bookmark at this line.")
       (pop-to-buffer (get-buffer buffer-name))
-      (bm-goto bookmark))))
+      (bm-goto bookmark)
+      (when bm-electric-show (bm-show-quit-window)))))
 
 
 (defun bm-show-bookmark nil
@@ -1042,14 +1064,38 @@ Region defined by BEG and END."
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "RET") 'bm-show-goto-bookmark)
     (define-key map (kbd "SPC") 'bm-show-bookmark)
+    (define-key map (kbd "M-n") 'bm-show-next)
+    (define-key map (kbd "M-p") 'bm-show-prev)
+    (define-key map "q"         'bm-show-quit-window)
     map)
   "Keymap for `bm-show-mode'.")
 
+
+(defconst bm-header 
+  (concat
+   (propertize " " 'display '(space :align-to (+ left-margin 1)))
+   (format bm-show-line-format "File:Line" "Annotation" "Contents"))
+  "Format for `header-line-format' in *bm-bookmarks* buffer.")
+
+
+(defun bm-show-next (lines)
+  "Goto next bookmark in `bm-show' buffer."
+  (interactive "p")
+  (forward-line lines)
+  (bm-show-bookmark))
+
+
+(defun bm-show-prev (lines)
+  "Goto previous bookmark in `bm-show' buffer."
+  (interactive "p")
+  (forward-line (- lines))
+  (bm-show-bookmark))
 
 (defun bm-show-mode nil
   "Major mode for `bm-show' buffers."
   (interactive)
   (kill-all-local-variables)
+  (setq header-line-format bm-header)
   (setq major-mode 'bm-show-mode)
   (setq mode-name "bm-bookmarks")
   (use-local-map bm-show-mode-map))
