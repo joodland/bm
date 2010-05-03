@@ -220,8 +220,8 @@
 ;;    (http://www.emacswiki.org/cgi-bin/wiki/bm-ext.el)
 ;;  - Thanks to Jonathan Kotta <jpkotta(at)gmail.com> for mouse support and fringe
 ;;    markers on left or right side.
-;;  - Thanks to Juanma Barranquero <lekktu(at)gmail.com> for making `bm-show' an 
-;;    electric window, cleaning up the code and fixing spelling errors. 
+;;  - Thanks to Juanma Barranquero <lekktu(at)gmail.com> for making `bm-show' an
+;;    electric window, cleaning up the code and fixing spelling errors.
 
 
 ;;; Change log:
@@ -229,7 +229,7 @@
 ;;  Changes in 1.45
 ;;   - Changed `bm-show' to an electric window. Thanks to Juanma Barranquero for patch.
 ;; 
-;;  Changes in 1.44 
+;;  Changes in 1.44
 ;;   - Fixed spelling. Cleaned up some code. Thanks to Juanma Barranquero for patch.
 ;;
 ;;  Changes in 1.43
@@ -515,6 +515,9 @@ before bm is loaded.")
 (defvar bm-wrapped nil
   "State variable to support wrapping.")
 (make-variable-buffer-local 'bm-wrapped)
+
+(defconst bm-show-buffer-name "*bm-bookmarks*"
+  "The name of the buffer used to show bookmarks by `bm-show'.")
 
 (defconst bm-show-line-format "%-20s %-20s %s"
   "The format string used by `bm-header' and `bm-show-extract-bookmarks'.")
@@ -977,9 +980,9 @@ Region defined by BEG and END."
   
 
 (defun bm-show-quit-window nil
-  "Quit the window displaying *bm-bookmarks*."
+  "Quit the window displaying `bm-show-buffer-name'."
   (interactive)
-  (quit-window nil (get-buffer-window "*bm-bookmarks*")))
+  (quit-window nil (get-buffer-window bm-show-buffer-name)))
 
 
 (defun bm-show-all nil
@@ -1023,10 +1026,10 @@ Region defined by BEG and END."
 
 
 (defun bm-show-display-lines (lines)
-  "Show bookmarked LINES to the *bm-bookmarks* buffer."
+  "Show bookmarked LINES to the `bm-show-buffer-name' buffer."
   (if (= (length lines) 0)
       (message "No bookmarks defined.")
-    (with-output-to-temp-buffer "*bm-bookmarks*"
+    (with-output-to-temp-buffer bm-show-buffer-name
       (set-buffer standard-output)
       (insert lines)
       (bm-show-mode)
@@ -1036,7 +1039,7 @@ Region defined by BEG and END."
 
 
 (defun bm-show-goto-bookmark nil
-  "Goto the bookmark on current line in the *bm-bookmarks* buffer."
+  "Goto the bookmark on current line in the `bm-show-buffer-name' buffer."
   (interactive)
   (let ((buffer-name (get-text-property (point) 'bm-buffer))
 	(bookmark (get-text-property (point) 'bm-bookmark)))
@@ -1048,7 +1051,7 @@ Region defined by BEG and END."
 
 
 (defun bm-show-bookmark nil
-  "Show the bookmark on current line in the *bm-bookmarks* buffer."
+  "Show the bookmark on current line in the `bm-show-buffer-name' buffer."
   (interactive)
   (let ((buffer-name (get-text-property (point) 'bm-buffer))
 	(bookmark (get-text-property (point) 'bm-bookmark)))
@@ -1071,25 +1074,28 @@ Region defined by BEG and END."
   "Keymap for `bm-show-mode'.")
 
 
-(defconst bm-header 
+(defconst bm-header
   (concat
    (propertize " " 'display '(space :align-to (+ left-margin 1)))
    (format bm-show-line-format "File:Line" "Annotation" "Contents"))
-  "Format for `header-line-format' in *bm-bookmarks* buffer.")
+  "Format for `header-line-format' in `bm-show-buffer-name' buffer.")
 
 
 (defun bm-show-next (lines)
-  "Goto next bookmark in `bm-show' buffer."
+  "Goto next bookmark in `bm-show' buffer.
+LINES the number of lines to move forward."
   (interactive "p")
   (forward-line lines)
   (bm-show-bookmark))
 
 
 (defun bm-show-prev (lines)
-  "Goto previous bookmark in `bm-show' buffer."
+  "Goto previous bookmark in `bm-show' buffer.
+LINES the number of lines to move backwards."
   (interactive "p")
   (forward-line (- lines))
   (bm-show-bookmark))
+
 
 (defun bm-show-mode nil
   "Major mode for `bm-show' buffers."
