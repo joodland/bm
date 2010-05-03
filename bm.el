@@ -226,6 +226,10 @@
 
 ;;; Change log:
 
+;;  Changes in 1.48
+;;   - Removed support for repository file format version 1.
+;;   - Cleaned up some code.
+;;
 ;;  Changes in 1.45
 ;;   - Changed `bm-show' to an electric window. Thanks to Juanma Barranquero for patch.
 ;; 
@@ -483,16 +487,6 @@ t, save bookmarks."
   :group 'bm)
 (make-variable-buffer-local 'bm-buffer-persistence)
 
-
-(defcustom bm-restore-on-mismatch nil
-  "*Specify if bookmarks should be restored if there is a buffer size mismatch.
-DEPRECATED: Only in use for version 1 of repository.
-
-nil, don't restore.
-t, restore if possible."
-  :type 'boolean
-  :group 'bm)
-
 (defvar bm-restore-repository-on-load nil
   "Specify if repository should be restored when loading bm.
 
@@ -580,8 +574,7 @@ If ANNOTATION is provided use this, and do not prompt for input.
 Only used if `bm-annotate-on-create' is true.
 
 Do nothing if bookmark is present."
-  (if (bm-bookmark-at (point))
-      nil				; bookmark exists
+  (unless (bm-bookmark-at (point))
     (let ((bookmark (make-overlay (bm-start-position) (bm-end-position)))
           (hlface (if bm-buffer-persistence bm-persistent-face bm-face))
           (hlface-fringe (if bm-buffer-persistence bm-fringe-persistent-face bm-fringe-face)))
@@ -875,18 +868,14 @@ EV is the mouse event."
 (defun bm-first nil
   "Goto first bookmark in buffer."
   (goto-char (point-min))
-  (if (bm-bookmark-at (point))
-      ;; bookmark at beginning of buffer, stop looking
-      nil
-    (bm-next)))
+  (unless (bm-bookmark-at (point)) ; bookmark at beginning of buffer, stop looking
+      (bm-next)))
 
 
 (defun bm-last nil
-  "Goto first bookmark in buffer."
+  "Goto last bookmark in buffer."
   (goto-char (point-max))
-  (if (bm-bookmark-at (point))
-      ;; bookmark at end of buffer, stop looking
-      nil
+  (unless (bm-bookmark-at (point)) ; bookmark at end of buffer, stop looking
     (bm-previous)))
 
 
@@ -1165,7 +1154,7 @@ otherwise we use the context after."
           (cond ((= version 2)
                  (bm-buffer-restore-2 buffer-data))
                 (t
-                 (bm-buffer-restore-1 buffer-data))))
+                 (message "Unknown data format. Version %d" version))))
       (if (interactive-p) (message "No bookmarks in repository.")))))
 
 
@@ -1177,78 +1166,39 @@ otherwise we use the context after."
 	     (bm-buffer-restore))
 	  (buffer-list))))
 
-(defun bm-buffer-restore-1 (buffer-data)
-  "Restore bookmarks from version 1 format.
-BUFFER-DATA is the content of `bm-repository-file'."
-  (let ((buffer-size-match (equal (point-max) (cdr (assoc 'size buffer-data))))
-        (positions (cdr (assoc 'positions buffer-data))))
-    
-    ;; validate buffer size
-    (if (or buffer-size-match
-            bm-restore-on-mismatch)
-        ;; restore bookmarks
-        (let ((pos nil)
-              (count 0))
-          
-          (setq bm-buffer-persistence t) ; enable persistence
-          (save-excursion
-            (while positions
-              (setq pos (car positions))
-              
-              (if (and (< pos (point-min))
-                       (> (point-max) pos))
-                  nil		; outside buffer, skip bookmark
-                (goto-char pos)
-                (bm-bookmark-add)
-                (setq count (1+ count))
-                (setq positions (cdr positions)))))
-          
-          (if buffer-size-match
-              (message "%d bookmark(s) restored." count)
-            (message "Buffersize mismatch. %d bookmarks restored." count)))
-      
-      ;; size mismatch
-      (bm-repository-remove (buffer-file-name))
-      (message "Buffersize mismatch. No bookmarks restored."))))
-
 
 (defun bm-buffer-restore-2 (buffer-data)
   "Restore bookmarks from version 2 format.
 BUFFER-DATA is the content of `bm-repository-file'."
   (let ((buffer-size-match (equal (point-max) (cdr (assoc 'size buffer-data))))
-        (bookmarks (cdr (assoc 'bookmarks buffer-data))))
+        (bookmarks (cdr (assoc 'bookmarks buffer-data)))
+        (count 0))
     
-    ;; restore bookmarks
-    (let ((pos nil)
-          (count 0))
-      
       (setq bm-buffer-persistence t) ; enable persistence
       (save-excursion
         (while bookmarks
-          (let ((pos
-                 (if buffer-size-match
-                     (cdr (assoc 'position (car bookmarks)))
-                   (bm-get-position-from-context (car bookmarks))))
-                (bm nil)
+          (let ((pos (if buffer-size-match
+                         (cdr (assoc 'position (car bookmarks)))
+                       (bm-get-position-from-context (car bookmarks))))
                 (annotation (cdr (assoc 'annotation (car bookmarks)))))
             
-            (if (and (< pos (point-min))
-                     (> (point-max) pos))
-                nil		; outside buffer, skip bookmark
+            ;; create bookmark if is inside buffer
+            (when (and (<= (point-min) pos)
+                       (<= pos (point-max)))
               (goto-char pos)
-              (setq bm (bm-bookmark-add annotation))
-              (setq count (1+ count))
-              (setq bookmarks (cdr bookmarks))))))
+              (bm-bookmark-add annotation)
+              (setq count (1+ count)))
+            (setq bookmarks (cdr bookmarks)))))
       
       (if buffer-size-match
           (message "%d bookmark(s) restored." count)
-        (message "%d bookmark(s) restored based on context." count)))))
+        (message "%d bookmark(s) restored based on context." count))))
 
 
 (defun bm-buffer-save nil
   "Save all bookmarks to repository."
   (interactive)
-  (if (not (null (bm-buffer-file-name)))
+  (if (bm-buffer-file-name)
       (if bm-buffer-persistence
           (let ((buffer-data
                  (list
@@ -1265,16 +1215,13 @@ BUFFER-DATA is the content of `bm-repository-file'."
                                  (cons 'position position)
                                  (cons 'annotation (overlay-get bm 'annotation))
                                  (cons 'before-context-string
-                                       (if (>= (point-min) (- position bm-bookmark-context-size))
-                                           nil
-                                         (buffer-substring-no-properties
-                                          (- position bm-bookmark-context-size) position)))
+                                       (let ((context-start 
+                                              (max (point-min) (- position bm-bookmark-context-size))))
+                                         (buffer-substring-no-properties context-start position)))
                                  (cons 'after-context-string
-                                       (if (>= (+ position bm-bookmark-context-size) (point-max))
-                                           nil
-                                         (buffer-substring-no-properties
-                                          position (+ position bm-bookmark-context-size))))
-                                 )))
+                                       (let ((context-end 
+                                              (min (+ position bm-bookmark-context-size) (point-max))))
+                                         (buffer-substring-no-properties position context-end))))))
                            (append (car bookmarks) (cdr bookmarks))))))))
             
             ;; remove if exists
@@ -1317,9 +1264,7 @@ BUFFER-DATA is the content of `bm-repository-file'."
 (defun bm-repository-remove (key)
   "Remove data for a buffer from the repository identified by KEY."
   (let ((repository nil))
-    (if (not (assoc key bm-repository))
-	;; don't exist in repository, do nothing
-	nil
+    (when (assoc key bm-repository)
       ;; remove all occurances
       (while bm-repository
 	(if (not (equal key (car (car bm-repository))))
