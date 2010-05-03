@@ -411,12 +411,12 @@ t, always ask for annotation when creating a bookmark."
 
 
 (defcustom bm-wrap-search t
- "*Specify if bookmark search should wrap.
+  "*Specify if bookmark search should wrap.
 
 nil, don't wrap when there are no more bookmarks.
 t, wrap."
- :type 'boolean
- :group 'bm)
+  :type 'boolean
+  :group 'bm)
 
 
 (defcustom bm-wrap-immediately t
@@ -430,13 +430,13 @@ t, don't announce."
 
 
 (defcustom bm-cycle-all-buffers nil
- "*Specify if bookmark search is done across buffers.
+  "*Specify if bookmark search is done across buffers.
 This will ignore the `bm-wrap-search' setting.
 
 nil, only search in current buffer.
 t, search in all open buffers."
- :type 'boolean
- :group 'bm)
+  :type 'boolean
+  :group 'bm)
 
 (defcustom bm-recenter nil
   "*Specify if the buffer should be recentered after jumping to a bookmark."
@@ -549,7 +549,7 @@ If ANNOTATION is provided use this, and not prompt for input."
             (setq annotation (read-from-minibuffer "Annotation: " nil nil nil 'bm-annotation-history)))
         (overlay-put bookmark 'annotation annotation))
     (if (interactive-p) (message "No bookmark at point"))))
-    
+
 
 (defun bm-bookmark-show-annotation (&optional bookmark)
   "Show annotation for bookmark.
@@ -768,7 +768,7 @@ in the specified direction."
     (setq bm-wrapped t)       ; wrap on next goto
     (message "Failed: No next bookmark.")))
 
-  
+
 ;;;###autoload
 (defun bm-next-mouse (ev)
   "Go to the next bookmark with the scroll wheel.
@@ -788,10 +788,10 @@ EV is the mouse event."
       (if bm-cycle-all-buffers
           (bm-last-in-previous-buffer)
         (message "No bookmarks defined."))
-  (let ((bm-list-backward (car (bm-lists 'backward))))
-    ;; remove bookmark at point
-    (if (bm-equal (bm-bookmark-at (point)) (car bm-list-backward))
-        (setq bm-list-backward (cdr bm-list-backward)))
+    (let ((bm-list-backward (car (bm-lists 'backward))))
+      ;; remove bookmark at point
+      (if (bm-equal (bm-bookmark-at (point)) (car bm-list-backward))
+          (setq bm-list-backward (cdr bm-list-backward)))
 
       (if bm-list-backward
           (bm-goto (car bm-list-backward))
@@ -977,7 +977,7 @@ Region defined by BEG and END."
 		 line lines)
       (goto-line line)
       (bm-bookmark-add))))
-  
+
 
 (defun bm-show-quit-window nil
   "Quit the window displaying `bm-show-buffer-name'."
@@ -1147,7 +1147,7 @@ otherwise we use the context after."
           (progn
             (goto-char (match-beginning 0))
             (setq point (point))))
-        
+      
       ;; search backward for context
       (if (and before (search-backward before (point-min) t))
           (progn
@@ -1166,7 +1166,7 @@ otherwise we use the context after."
                  (bm-buffer-restore-2 buffer-data))
                 (t
                  (bm-buffer-restore-1 buffer-data))))
-    (if (interactive-p) (message "No bookmarks in repository.")))))
+      (if (interactive-p) (message "No bookmarks in repository.")))))
 
 
 (defun bm-buffer-restore-all nil
@@ -1182,7 +1182,7 @@ otherwise we use the context after."
 BUFFER-DATA is the content of `bm-repository-file'."
   (let ((buffer-size-match (equal (point-max) (cdr (assoc 'size buffer-data))))
         (positions (cdr (assoc 'positions buffer-data))))
-      
+    
     ;; validate buffer size
     (if (or buffer-size-match
             bm-restore-on-mismatch)
@@ -1206,7 +1206,7 @@ BUFFER-DATA is the content of `bm-repository-file'."
           (if buffer-size-match
               (message "%d bookmark(s) restored." count)
             (message "Buffersize mismatch. %d bookmarks restored." count)))
-	
+      
       ;; size mismatch
       (bm-repository-remove (buffer-file-name))
       (message "Buffersize mismatch. No bookmarks restored."))))
@@ -1217,7 +1217,7 @@ BUFFER-DATA is the content of `bm-repository-file'."
 BUFFER-DATA is the content of `bm-repository-file'."
   (let ((buffer-size-match (equal (point-max) (cdr (assoc 'size buffer-data))))
         (bookmarks (cdr (assoc 'bookmarks buffer-data))))
-      
+    
     ;; restore bookmarks
     (let ((pos nil)
           (count 0))
@@ -1243,7 +1243,7 @@ BUFFER-DATA is the content of `bm-repository-file'."
       (if buffer-size-match
           (message "%d bookmark(s) restored." count)
         (message "%d bookmark(s) restored based on context." count)))))
-    
+
 
 (defun bm-buffer-save nil
   "Save all bookmarks to repository."
@@ -1311,7 +1311,7 @@ BUFFER-DATA is the content of `bm-repository-file'."
   ;; remove oldest element if repository is too large
   (while (and bm-repository-size
 	      (> (length bm-repository) bm-repository-size))
-	(setq bm-repository (cdr bm-repository))))
+    (setq bm-repository (cdr bm-repository))))
 
 
 (defun bm-repository-remove (key)
@@ -1376,7 +1376,7 @@ BUFFER-DATA is the content of `bm-repository-file'."
   (interactive)
   (bm-buffer-save-all)
   (bm-repository-save))
-  
+
 
 (defun bm-buffer-file-name nil
   "Get a unique key for the repository, even for non-file buffers."
