@@ -822,7 +822,8 @@ EV is the mouse event."
 (defun bm-first-in-next-buffer nil
   "Goto first bookmark in next buffer."
   (interactive)
-  (let ((buffers
+  (let ((current (current-buffer))
+        (buffers
          (save-excursion
            (remq nil (mapcar '(lambda (buffer)
                                 (set-buffer buffer)
@@ -835,6 +836,7 @@ EV is the mouse event."
     (if buffers
         (progn
           (switch-to-buffer (car buffers))
+          (bury-buffer current)
           (message "Switched to '%s'" (car buffers))
           (bm-first))
       ;; no bookmarks found in other open buffers,
@@ -842,7 +844,6 @@ EV is the mouse event."
       (if bm-wrap-search
           (bm-wrap-forward)
         (message "No bookmarks found in other open buffers.")))))
-
 
 
 (defun bm-last-in-previous-buffer nil
