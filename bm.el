@@ -221,11 +221,16 @@
 ;;  - Thanks to Jonathan Kotta <jpkotta(at)gmail.com> for mouse support and fringe
 ;;    markers on left or right side.
 ;;  - Thanks to Juanma Barranquero <lekktu(at)gmail.com> for making `bm-show' an
-;;    electric window, cleaning up the code and fixing spelling errors.
+;;    electric window, cleaning up the code, fixing bugs and fixing spelling errors.
 
 
 ;;; Change log:
 
+;;  Changes in 1.49
+;;   - Removed used of `goto-line' due to compile warning in GNU Emacs 23.2.1.
+;;     Thanks to Juanma Barranquero for patch.
+;;   - Fixed bug in `bm-bookmark-regexp-region'. Thanks to Juanma Barranquero for patch.
+;;
 ;;  Changes in 1.48
 ;;   - Removed support for repository file format version 1.
 ;;   - Cleaned up some code.
@@ -950,7 +955,8 @@ Region defined by BEG and END."
                             "Annotation: " nil nil nil 'bm-annotation-history)))
 
       (goto-char beg)
-      (while (re-search-forward regexp end t)
+      (while (and (< (point) end)
+                  (re-search-forward regexp end t))
 	(bm-bookmark-add annotation)
         (setq count (1+ count))
 	(forward-line 1)))
@@ -960,12 +966,14 @@ Region defined by BEG and END."
 (defun bm-bookmark-line (line)
   "Set a bookmark on the specified LINE."
   (interactive "nSet a bookmark on line: ")
-  (let ((lines (count-lines (point-min) (point-max))))
-    (if (> line lines)
-	(message "Unable to set bookmark at line %d. Only %d lines in buffer."
-		 line lines)
-      (goto-line line)
-      (bm-bookmark-add))))
+  (let* ((here (point))
+         (remaining (progn
+                      (goto-char (point-min))
+                      (forward-line (1- line)))))
+    (if (zerop remaining)
+        (bm-bookmark-add)
+      (message "Unable to set bookmark at line %d. Only %d lines in the buffer." line (- line remaining 1))
+      (goto-char here))))
 
 
 (defun bm-show-quit-window nil
@@ -1215,11 +1223,11 @@ BUFFER-DATA is the content of `bm-repository-file'."
                                  (cons 'position position)
                                  (cons 'annotation (overlay-get bm 'annotation))
                                  (cons 'before-context-string
-                                       (let ((context-start 
+                                       (let ((context-start
                                               (max (point-min) (- position bm-bookmark-context-size))))
                                          (buffer-substring-no-properties context-start position)))
                                  (cons 'after-context-string
-                                       (let ((context-end 
+                                       (let ((context-end
                                               (min (+ position bm-bookmark-context-size) (point-max))))
                                          (buffer-substring-no-properties position context-end))))))
                            (append (car bookmarks) (cdr bookmarks))))))))
