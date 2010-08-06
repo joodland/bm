@@ -524,8 +524,11 @@ before bm is loaded.")
 (defvar bm-marker 'bm-marker-left
   "Fringe marker side. Left of right.")
 
-(define-fringe-bitmap 'bm-marker-left   [#x00 #x00 #xFC #xFE #x0F #xFE #xFC #x00])
-(define-fringe-bitmap 'bm-marker-right  [#x00 #x00 #x3F #x7F #xF0 #x7F #x3F #x00])
+;; avoid errors on emacs running in a terminal
+(if (fboundp 'define-fringe-bitmap)
+    (progn
+      (define-fringe-bitmap 'bm-marker-left   [#x00 #x00 #xFC #xFE #x0F #xFE #xFC #x00])
+      (define-fringe-bitmap 'bm-marker-right  [#x00 #x00 #x3F #x7F #xF0 #x7F #x3F #x00])))
 
 
 (defun bm-customize nil
