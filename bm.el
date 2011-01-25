@@ -226,6 +226,23 @@
 
 ;;; Change log:
 
+;;  Changes in 1.53
+;;   - Fixed `max-lisp-eval-depth' bug (#32249) in `bm-next' and `bm-previous' if no bookmark in buffer.
+;;   - Cleaned up code.
+;;
+;;  Changes in 1.52
+;;   - Cleaned up code.
+;;
+;;  Changes in 1.51
+;;   - Fixed bug(#31546) - emacs-nox
+;;
+;;  Changes in 1.50
+;;   - Fixed bug(#29772) - `bm-next' across buffers.
+;;   - Removed support for version 1 of repository file.
+;;   - Changed `bm-show' into an electric window.
+;;   - Cleaned up code.
+;;   - Minor bug fixes.
+;;
 ;;  Changes in 1.49
 ;;   - Removed used of `goto-line' due to compile warning in GNU Emacs 23.2.1.
 ;;     Thanks to Juanma Barranquero for patch.
@@ -744,29 +761,27 @@ in the specified direction."
 (defun bm-next nil
   "Goto next bookmark."
   (interactive)
-  (if (= (bm-count) 0)
-      (if bm-cycle-all-buffers
-          (bm-first-in-next-buffer)
-        (message "No bookmarks defined."))
-    (let ((bm-list-forward (cdr (bm-lists 'forward))))
-      ;; remove bookmark at point
-      (if (bm-equal (bm-bookmark-at (point)) (car bm-list-forward))
-          (setq bm-list-forward (cdr bm-list-forward)))
-
-      (if bm-list-forward
-          (bm-goto (car bm-list-forward))
-        (cond (bm-cycle-all-buffers (bm-first-in-next-buffer))
-              (bm-wrap-search (bm-wrap-forward))
-              (t (message "No next bookmark.")))))))
+  (let ((bm-list-forward (cdr (bm-lists 'forward))))
+    ;; remove bookmark at point
+    (if (bm-equal (bm-bookmark-at (point)) (car bm-list-forward))
+        (setq bm-list-forward (cdr bm-list-forward)))
+    
+    (if bm-list-forward
+        (bm-goto (car bm-list-forward))
+      (cond (bm-cycle-all-buffers (bm-first-in-next-buffer))
+            (bm-wrap-search (bm-wrap-forward))
+            (t (message "No next bookmark."))))))
 
 (defun bm-wrap-forward nil
   "Goto next bookmark, wrapping."
-  (if (or bm-wrapped bm-wrap-immediately)
-      (progn
-        (bm-first)
-        (message "Wrapped."))
-    (setq bm-wrapped t)       ; wrap on next goto
-    (message "Failed: No next bookmark.")))
+  (if (= (bm-count) 0)
+      (message "No next bookmark.")
+    (if (or bm-wrapped bm-wrap-immediately)
+        (progn
+          (bm-first)
+          (message "Wrapped."))
+      (setq bm-wrapped t)       ; wrap on next goto
+      (message "No next bookmark."))))
 
 
 ;;;###autoload
@@ -784,30 +799,28 @@ EV is the mouse event."
 (defun bm-previous nil
   "Goto previous bookmark."
   (interactive)
-  (if (= (bm-count) 0)
-      (if bm-cycle-all-buffers
-          (bm-last-in-previous-buffer)
-        (message "No bookmarks defined."))
-    (let ((bm-list-backward (car (bm-lists 'backward))))
-      ;; remove bookmark at point
-      (if (bm-equal (bm-bookmark-at (point)) (car bm-list-backward))
-          (setq bm-list-backward (cdr bm-list-backward)))
-
-      (if bm-list-backward
-          (bm-goto (car bm-list-backward))
-
-        (cond (bm-cycle-all-buffers (bm-last-in-previous-buffer))
-              (bm-wrap-search (bm-wrap-backward))
-              (t (message "No previous bookmark.")))))))
+  (let ((bm-list-backward (car (bm-lists 'backward))))
+    ;; remove bookmark at point
+    (if (bm-equal (bm-bookmark-at (point)) (car bm-list-backward))
+        (setq bm-list-backward (cdr bm-list-backward)))
+    
+    (if bm-list-backward
+        (bm-goto (car bm-list-backward))
+      
+      (cond (bm-cycle-all-buffers (bm-last-in-previous-buffer))
+            (bm-wrap-search (bm-wrap-backward))
+            (t (message "No previous bookmark."))))))
 
 (defun bm-wrap-backward nil
   "Goto previous bookmark, wrapping."
-  (if (or bm-wrapped bm-wrap-immediately)
-      (progn
-        (bm-last)
-        (message "Wrapped."))
-    (setq bm-wrapped t)       ; wrap on next goto
-    (message "Failed: No previous bookmark.")))
+  (if (= (bm-count) 0)
+      (message "No previous bookmark.")
+    (if (or bm-wrapped bm-wrap-immediately)
+        (progn
+          (bm-last)
+          (message "Wrapped."))
+      (setq bm-wrapped t)       ; wrap on next goto
+      (message "No previous bookmark."))))
 
 
 ;;;###autoload
