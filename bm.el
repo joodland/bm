@@ -1,6 +1,6 @@
 ;;; bm.el  --- Visible bookmarks in buffer.
 
-;; Copyrigth (C) 2000-2010  Jo Odland
+;; Copyrigth (C) 2000-2011  Jo Odland
 
 ;; Author: Jo Odland <jo.odland(at)gmail.com>
 ;; Version: $Id$
@@ -64,7 +64,7 @@
 ;;      to enable/disable persistent bookmarks (buffer local).
 ;;
 ;;    - List bookmarks with annotations and context in a separate buffer,
-;;      see `bm-show' (current buffer) and `bm-show-all' (all buffers).
+;;      see `bm-show' (current buffer) and `bm-show-all' (all open buffers).
 ;;      See `bm-show-mode-map' for key bindings.
 ;;
 ;;    - Remove all bookmarks in current buffer with `bm-remove-all-current-buffer' and
@@ -82,8 +82,8 @@
 
 ;;; Known limitations:
 ;;
-;;   This package is developed and tested on GNU Emacs 22.x. It should
-;;   work on all GNU Emacs 21.x, GNU Emacs 23.x and also on XEmacs
+;;   This package is developed and tested on GNU Emacs 23.x. It should
+;;   work on all GNU Emacs 21.x, GNU Emacs 22.x and also on XEmacs
 ;;   21.x with some limitations.
 ;;
 ;;   There are some incompatibilities with lazy-lock when using
@@ -221,11 +221,19 @@
 ;;  - Thanks to Jonathan Kotta <jpkotta(at)gmail.com> for mouse support and fringe
 ;;    markers on left or right side.
 ;;  - Thanks to Juanma Barranquero <lekktu(at)gmail.com> for making `bm-show' an
-;;    electric window, cleaning up the code, fixing bugs and fixing spelling errors.
+;;    electric window, cleaning up the code, finding and fixing bugs and 
+;;    correcting spelling errors.
 
 
 ;;; Change log:
 
+;;  Changes in 1.55
+;;   - Renamed function `bm-line-highlighted' to `bm-highlight-line'.
+;;   - Renamed function`bm-fringe-highlighted' to `bm-highlight-fringe'.
+;;   - Fixed bug(#32733) - `bm-toggle-buffer-persistence' does take
+;;     into account the value of `bm-highlight-style'.
+;;   - Cleaned up code.
+;;
 ;;  Changes in 1.54
 ;;   - Applied patch from Juanma Barranquero rewriting `bm-repository-save' and `bm-repository-load'.
 ;;
@@ -584,15 +592,35 @@ Either the bookmark at point or the BOOKMARK specified as parameter."
                    "No annotation for current bookmark."))
     (message "No bookmark at current line.")))
 
-(defun bm-line-highlighted ()
+(defun bm-highlight-line ()
   "Test if line is highlighted."
   (or (equal bm-highlight-style 'bm-highlight-only-line)
       (equal bm-highlight-style 'bm-highlight-line-and-fringe)))
 
-(defun bm-fringe-highlighted ()
+(defun bm-highlight-fringe ()
   "Test if fringe is highlighted."
   (or (equal bm-highlight-style 'bm-highlight-only-fringe)
       (equal bm-highlight-style 'bm-highlight-line-and-fringe)))
+
+(defun bm-get-highlight-face nil
+  "Get the correct face according to the value of `bm-buffer-presistence'."
+  (if bm-buffer-persistence bm-persistent-face bm-face))
+
+(defun bm-get-highlight-face-fringde nil
+  "Get the correct fringde face according to the value of `bm-buffer-presistence'."
+  (if bm-buffer-persistence bm-fringe-persistent-face bm-fringe-face))
+
+(defun bm-get-fringe-marker nil
+  "Get the fringde marker string."
+  (let ((marker-string "*fringe-dummy*"))
+    (put-text-property 0 (length marker-string) 'display
+                       (list (if (eq bm-marker 'bm-marker-left)
+                                 'left-fringe
+                               'right-fringe)
+                             bm-marker (bm-get-highlight-face-fringde))
+                       marker-string)
+    marker-string))
+
 
 (defun bm-bookmark-add (&optional annotation)
   "Add bookmark at current line.
@@ -608,20 +636,12 @@ Do nothing if bookmark is present."
       ;; set market
       (overlay-put bookmark 'position (point-marker))
       ;; select bookmark face
-      (when (bm-line-highlighted)
+      (when (bm-highlight-line)
         (overlay-put bookmark 'face hlface))
       (overlay-put bookmark 'evaporate t)
       (overlay-put bookmark 'category 'bm)
-      (when (bm-fringe-highlighted)
-        (let* ((marker-string "*fringe-dummy*")
-               (marker-length (length marker-string)))
-          (put-text-property 0 marker-length 'display
-                             (list (if (eq bm-marker 'bm-marker-left)
-                                       'left-fringe
-                                     'right-fringe)
-                                   bm-marker hlface-fringe)
-                             marker-string)
-          (overlay-put bookmark 'before-string marker-string)))
+      (when (bm-highlight-fringe)
+        (overlay-put bookmark 'before-string (bm-get-fringe-marker)))
       (if (or bm-annotate-on-create annotation)
           (bm-bookmark-annotate bookmark annotation))
       (unless (featurep 'xemacs)
@@ -1143,9 +1163,11 @@ LINES the number of lines to move backwards."
   ;; change color on bookmarks
   (let ((bookmarks (bm-lists)))
     (mapc '(lambda (bookmark)
-	     (if bm-buffer-persistence
-		 (overlay-put bookmark 'face bm-persistent-face)
-	       (overlay-put bookmark 'face bm-face)))
+             (when (bm-highlight-line)
+               (overlay-put bookmark 'face (bm-get-highlight-face)))
+
+             (when (bm-highlight-fringe)
+               (overlay-put bookmark 'before-string (bm-get-fringe-marker))))
 	  (append (car bookmarks) (cdr bookmarks)))))
 
 
