@@ -18,7 +18,6 @@ Features:
 * List bookmarks (in all buffers) in a separate buffer.
 * Cycle through bookmarks in all open buffers.
 
-
 Installation:
 -------------
 
@@ -31,8 +30,6 @@ or
     (autoload 'bm-toggle   "bm" "Toggle bookmark in current buffer." t)
     (autoload 'bm-next     "bm" "Goto bookmark."                     t)
     (autoload 'bm-previous "bm" "Goto previous bookmark."            t)
-
-
 
 Configuration:
 --------------
@@ -63,8 +60,6 @@ Reviews and comments:
 * [EmacsWiki: VisibleBookmarks](http://www.emacswiki.org/cgi-bin/wiki/VisibleBookmarks)
 * [A couple of useful Emacs modes](http://codeblog.bsdninjas.co.uk/index.php?/archives/136-A-couple-of-useful-Emacs-modes.html)
 * [Part of Debian package: emacs-goodies-el](http://packages.debian.org/unstable/editors/emacs-goodies-el)
-
 * gnu.emacs.sources
     * [Original posting of bm.el (31 Jan 2001)](http://groups.google.com/group/gnu.emacs.sources/browse_thread/thread/2ccc0ece443a81b6/d4b97c612190d0d6?fwc=1)
     * [Posting of first version with persistence. (12 Nov 2003)](http://groups.google.com/group/gnu.emacs.sources/browse_thread/thread/8f0ec0f1eff89764/cd24c441f9bc6bef?lnk=gst#cd24c441f9bc6bef)
-
