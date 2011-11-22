@@ -1,108 +1,103 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
-	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<html>
 <head>
-	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+  <meta name="generator" content=
+  "HTML Tidy for Linux/x86 (vers 11 February 2007), see www.w3.org" />
+  <meta http-equiv="Content-Type" content="text/html; charset=us-ascii" />
+  <link rel="stylesheet" type="text/css" media="screen,projection,handheld" href=
+  "style.css" />
 
-	<title>joodland/bm @ GitHub</title>
-	
-	<style type="text/css">
-		body {
-  		margin-top: 1.0em;
-  		background-color: #1262cc;
-		  font-family: "Helvetica,Arial,FreeSans";
-  		color: #ffffff;
-    }
-    #container {
-      margin: 0 auto;
-      width: 700px;
-    }
-		h1 { font-size: 3.8em; color: #ed9d33; margin-bottom: 3px; }
-		h1 .small { font-size: 0.4em; }
-		h1 a { text-decoration: none }
-		h2 { font-size: 1.5em; color: #ed9d33; }
-    h3 { text-align: center; color: #ed9d33; }
-    a { color: #ed9d33; }
-    .description { font-size: 1.2em; margin-bottom: 30px; margin-top: 30px; font-style: italic;}
-    .download { float: right; }
-		pre { background: #000; color: #fff; padding: 15px;}
-    hr { border: 0; width: 80%; border-bottom: 1px solid #aaa}
-    .footer { text-align:center; padding-top:30px; font-style: italic; }
-	</style>
-	
+  <title>bm.el -- joodland/bm @ GitHub</title>
 </head>
 
 <body>
-  <a href="http://github.com/joodland/bm"><img style="position: absolute; top: 0; right: 0; border: 0;" src="http://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub" /></a>
+  <a href="http://github.com/joodland/bm">
+	<img style="position: absolute; top: 0; right: 0; border: 0;" src="http://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" 
+	alt="Fork me on GitHub" /></a>
 
   <div id="container">
-
     <div class="download">
-      <a href="http://github.com/joodland/bm/zipball/master">
-        <img border="0" width="90" src="http://github.com/images/modules/download/zip.png"></a>
-      <a href="http://github.com/joodland/bm/tarball/master">
-        <img border="0" width="90" src="http://github.com/images/modules/download/tar.png"></a>
+      <a href="http://github.com/joodland/bm/zipball/master"><img border="0" width="90" src="http://github.com/images/modules/download/zip.png" /></a> 
+	  <a href="http://github.com/joodland/bm/tarball/master"><img border="0" width="90" src="http://github.com/images/modules/download/tar.png" /></a>
     </div>
 
-    <h1><a href="http://github.com/joodland/bm">bm</a>
-      <span class="small">by <a href="http://github.com/joodland">joodland</a></span></h1>
+    <h1><a href="http://github.com/joodland/bm">bm.el</a> <span class="small">by 
+	<a href="http://github.com/joodland">joodland</a></span></h1>
 
     <div class="description">
       Visual Bookmarks for GNU Emacs
     </div>
 
-    <p>bm.el provides visible, buffer local, bookmarks and the ability to jump forward and backward to the next bookmark.
-</p><h2>Install</h2>
-<p>To use bm.el, put it in your load-path and add
-the following to your .emacs
+	<div class="preview">
+		<a href="bm.png"><img src="bm-small.png"></a>
+	</div>
+	
+	<div class="content">
+	<p>This package provides visible, buffer local, bookmarks and the ability
+      to jump forward and backward to the next bookmark.</p>
 
-(require 'bm)
+    <p>It was created because I missed the bookmarks from M$
+      Visual Studio in GNU Emacs. I think they provide an easy 
+      way to navigate in a buffer.</p>
 
-or
+    <p>
+      <strong>Features:</strong>
+      <ul>
+        <li> Toggle bookmarks. Jump to next/previous bookmark.
+        <li> Setting bookmarks based on a regexp. (Useful when searching logfiles.)
+        <li> Mouse navigation.
+        <li> Annotate bookmarks.
+        <li> Different wrapping modes.
+        <li> Different bookmarks styles, line-only, fringe-only or both.
+        <li> Persistent bookmarks (buffer local), also in non-file buffers (*info*) and indirect buffers.
+        <li> List bookmarks (in all buffers) in a separate buffer.
+        <li> Cycle through bookmarks in all open buffers.
+      </ul>
+    </p>
 
-(autoload 'bm-toggle   "bm" "Toggle bookmark in current buffer." t)
-(autoload 'bm-next     "bm" "Goto bookmark."                     t)
-(autoload 'bm-previous "bm" "Goto previous bookmark."            t)
-</p>
-<h2>License</h2>
-<p>This program is free software; you can redistribute it and/or
-modify it under the terms of the GNU General Public License as
-published by the Free Software Foundation; either version 2, or (at
-your option) any later version.
+    <h2>Install</h2>
+    <p>See <a href="https://github.com/joodland/bm/blob/master/README.md">README</a></p>
 
-This program is distributed in the hope that it will be useful, but
-WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-General Public License for more details.
+	<h2>Reviews and comments</h2>
+	<p>
+    	<ul>
+      		<li><a href="http://emacsworld.blogspot.com/2008/09/visual-bookmarks-package-for-emacs.html">A Visual Bookmarks package for Emacs</a>
+      	    <li><a href="http://www.emacsblog.org/2007/03/22/bookmark-mania/">Bookmark Mania</a>
+       		<li><a href="http://www.emacswiki.org/cgi-bin/wiki/VisibleBookmarks">EmacsWiki: VisibleBookmarks</a>
+      		<li><a href="http://codeblog.bsdninjas.co.uk/index.php?/archives/136-A-couple-of-useful-Emacs-modes.html">A couple of useful Emacs modes</a>
+      		<li><a href="http://packages.debian.org/unstable/editors/emacs-goodies-el">Part of Debian package: emacs-goodies-el</a>
+    	</ul>
+    	<strong><a href="http://groups.google.com/group/gnu.emacs.sources/topics">gnu.emacs.sources</a></strong>
+    	<ul>
+      		<li><a href="http://groups.google.com/group/gnu.emacs.sources/browse_thread/thread/2ccc0ece443a81b6/d4b97c612190d0d6?fwc=1">Original posting of bm.el</a> (31 Jan 2001)
+      		<li><a href="http://groups.google.com/group/gnu.emacs.sources/browse_thread/thread/8f0ec0f1eff89764/cd24c441f9bc6bef?lnk=gst#cd24c441f9bc6bef">Posting of first version with persistence.</a> (12 Nov 2003)
+    	</ul>
+	</p>
 
-You should have received a copy of the GNU General Public License
-along with GNU Emacs; see the file COPYING. If not, write to the
-Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
-</p>
-<h2>Authors</h2>
-<p>Jo Odland (jo.odland@gmail.com)<br/><br/>      </p>
-<h2>Contact</h2>
-<p>Jo Odland (jo.odland@gmail.com)<br/>      </p>
 
+    <h2>License</h2>
+    <p>This program is free software; you can redistribute it and/or modify it under the
+    terms of the GNU General Public License as published by the Free Software Foundation;
+    either version 2, or (at your option) any later version. This program is distributed
+    in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
+    implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+    General Public License for more details. You should have received a copy of the GNU
+    General Public License along with GNU Emacs; see the file COPYING. If not, write to
+    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.</p>
+
+    <h2>Author</h2>
+    <p>Jo Odland (jo.odland(at)gmail.com)</p>
 
     <h2>Download</h2>
-    <p>
-      You can download this project in either
-      <a href="http://github.com/joodland/bm/zipball/master">zip</a> or
-      <a href="http://github.com/joodland/bm/tarball/master">tar</a> formats.
-    </p>
-    <p>You can also clone the project with <a href="http://git-scm.com">Git</a>
-      by running:
-      <pre>$ git clone git://github.com/joodland/bm</pre>
-    </p>
+    <p>You can download this project in either <a href="http://github.com/joodland/bm/zipball/master">zip</a> or 
+	<a href="http://github.com/joodland/bm/tarball/master">tar</a> formats.</p>
 
+    <p>You can also clone the project with <a href="http://git-scm.com">Git</a> by running:</p>
+
+    <pre>$ git clone git://github.com/joodland/bm</pre>
+</div>
     <div class="footer">
       get the source code on GitHub : <a href="http://github.com/joodland/bm">joodland/bm</a>
     </div>
-
   </div>
-
-  
 </body>
 </html>
