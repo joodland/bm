@@ -221,7 +221,7 @@
 ;;  - Thanks to Jonathan Kotta <jpkotta(at)gmail.com> for mouse support and fringe
 ;;    markers on left or right side.
 ;;  - Thanks to Juanma Barranquero <lekktu(at)gmail.com> for making `bm-show' an
-;;    electric window, cleaning up the code, finding and fixing bugs and 
+;;    electric window, cleaning up the code, finding and fixing bugs and
 ;;    correcting spelling errors.
 
 
@@ -265,7 +265,7 @@
 ;;
 ;;  Changes in 1.45
 ;;   - Changed `bm-show' to an electric window. Thanks to Juanma Barranquero for patch.
-;; 
+;;
 ;;  Changes in 1.44
 ;;   - Fixed spelling. Cleaned up some code. Thanks to Juanma Barranquero for patch.
 ;;
@@ -788,7 +788,7 @@ in the specified direction."
     ;; remove bookmark at point
     (if (bm-equal (bm-bookmark-at (point)) (car bm-list-forward))
         (setq bm-list-forward (cdr bm-list-forward)))
-    
+
     (if bm-list-forward
         (bm-goto (car bm-list-forward))
       (cond (bm-cycle-all-buffers (bm-first-in-next-buffer))
@@ -826,10 +826,10 @@ EV is the mouse event."
     ;; remove bookmark at point
     (if (bm-equal (bm-bookmark-at (point)) (car bm-list-backward))
         (setq bm-list-backward (cdr bm-list-backward)))
-    
+
     (if bm-list-backward
         (bm-goto (car bm-list-backward))
-      
+
       (cond (bm-cycle-all-buffers (bm-last-in-previous-buffer))
             (bm-wrap-search (bm-wrap-backward))
             (t (message "No previous bookmark."))))))
@@ -1185,7 +1185,7 @@ otherwise we use the context after."
           (progn
             (goto-char (match-beginning 0))
             (setq point (point))))
-      
+
       ;; search backward for context
       (if (and before (search-backward before (point-min) t))
           (progn
@@ -1222,7 +1222,7 @@ BUFFER-DATA is the content of `bm-repository-file'."
   (let ((buffer-size-match (equal (point-max) (cdr (assoc 'size buffer-data))))
         (bookmarks (cdr (assoc 'bookmarks buffer-data)))
         (count 0))
-    
+
       (setq bm-buffer-persistence t) ; enable persistence
       (save-excursion
         (while bookmarks
@@ -1230,7 +1230,7 @@ BUFFER-DATA is the content of `bm-repository-file'."
                          (cdr (assoc 'position (car bookmarks)))
                        (bm-get-position-from-context (car bookmarks))))
                 (annotation (cdr (assoc 'annotation (car bookmarks)))))
-            
+
             ;; create bookmark if is inside buffer
             (when (and (<= (point-min) pos)
                        (<= pos (point-max)))
@@ -1238,7 +1238,7 @@ BUFFER-DATA is the content of `bm-repository-file'."
               (bm-bookmark-add annotation)
               (setq count (1+ count)))
             (setq bookmarks (cdr bookmarks)))))
-      
+
       (if buffer-size-match
           (message "%d bookmark(s) restored." count)
         (message "%d bookmark(s) restored based on context." count))))
@@ -1272,17 +1272,17 @@ BUFFER-DATA is the content of `bm-repository-file'."
                                               (min (+ position bm-bookmark-context-size) (point-max))))
                                          (buffer-substring-no-properties position context-end))))))
                            (append (car bookmarks) (cdr bookmarks))))))))
-            
+
             ;; remove if exists
             (bm-repository-remove (car buffer-data))
-            
+
             ;; add if there exists bookmarks
             (let ((count (length (cdr (assoc 'bookmarks buffer-data)))))
               (if (> count 0)
                   (bm-repository-add buffer-data))
               (if (interactive-p)
                   (message "%d bookmark(s) saved to repository." count))))
-        
+
         (if (interactive-p)
             (message "No bookmarks saved. Buffer is not persistent.")))
 
@@ -1303,7 +1303,7 @@ BUFFER-DATA is the content of `bm-repository-file'."
   "Add DATA for a buffer to the repository."
   ;; appending to list, makes the list sorted by time
   (setq bm-repository (append bm-repository (list data)))
-  
+
   ;; remove oldest element if repository is too large
   (while (and bm-repository-size
 	      (> (length bm-repository) bm-repository-size))
