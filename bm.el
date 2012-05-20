@@ -1,4 +1,4 @@
-;;; bm.el  --- Visible bookmarks in buffer.
+;;; bm.el --- Visible bookmarks in buffer.
 
 ;; Copyrigth (C) 2000-2011  Jo Odland
 
