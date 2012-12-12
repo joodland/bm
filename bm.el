@@ -3,7 +3,7 @@
 ;; Copyrigth (C) 2000-2011  Jo Odland
 
 ;; Author: Jo Odland <jo.odland(at)gmail.com>
-;; Keywords; bookmark, highlight, faces, persistent
+;; Keywords: bookmark, highlight, faces, persistent
 ;; URL: https://github.com/joodland/bm
 
 ;; Portions Copyright (C) 2002 by Ben Key
