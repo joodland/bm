@@ -327,6 +327,7 @@
 ;;
 
 (eval-and-compile
+  (require 'cl)
   ;; avoid compile warning on unbound variable
   (require 'info)
 
@@ -473,6 +474,14 @@ t, search in all open buffers."
   :type 'boolean
   :group 'bm)
 
+(defcustom bm-in-lifo-order t
+  "`bm-show' and `bm-show-all' list bookmarks in LIFO order,
+`bm-next' and `bm-previous' goto bookmark in LIFO order,
+ (that is, most recently set ones come first, oldest ones come last)"
+  :type 'boolean
+  :group 'bm)
+
+
 (defcustom bm-recenter nil
   "*Specify if the buffer should be recentered after jumping to a bookmark."
   :type 'boolean
@@ -550,6 +559,8 @@ before bm is loaded.")
 (defvar bm-marker 'bm-marker-left
   "Fringe marker side. Left of right.")
 
+(defvar bm-current nil)
+
 ;; avoid errors on emacs running in a terminal
 (when (fboundp 'define-fringe-bitmap)
   (define-fringe-bitmap 'bm-marker-left   [#x00 #x00 #xFC #xFE #x0F #xFE #xFC #x00])
@@ -620,7 +631,7 @@ Either the bookmark at point or the BOOKMARK specified as parameter."
     marker-string))
 
 
-(defun bm-bookmark-add (&optional annotation)
+(defun bm-bookmark-add (&optional annotation time)
   "Add bookmark at current line.
 
 If ANNOTATION is provided use this, and do not prompt for input.
@@ -632,6 +643,7 @@ Do nothing if bookmark is present."
           (hlface (if bm-buffer-persistence bm-persistent-face bm-face))
           (hlface-fringe (if bm-buffer-persistence bm-fringe-persistent-face bm-fringe-face)))
       ;; set market
+      (overlay-put bookmark 'time (or time (float-time)))
       (overlay-put bookmark 'position (point-marker))
       ;; select bookmark face
       (when (bm-highlight-line)
@@ -648,6 +660,7 @@ Do nothing if bookmark is present."
         (overlay-put bookmark 'modification-hooks '(bm-freeze))
         (overlay-put bookmark 'insert-in-front-hooks '(bm-freeze-in-front))
         (overlay-put bookmark 'insert-behind-hooks '(bm-freeze)))
+      (setq bm-current bookmark)
       bookmark)))
 
 
@@ -777,9 +790,90 @@ in the specified direction."
          (cons (remq nil (mapcar 'bm-bookmarkp (car (overlay-lists))))
                (remq nil (mapcar 'bm-bookmarkp (cdr (overlay-lists))))))))
 
+(defun bm-overlay－in-buffer()
+  "overlays in current buffer"
+  (let ((bookmarks (bm-lists)))
+    (append
+     ;; xemacs has the list sorted after buffer position, while
+     ;; gnu emacs list is sorted relative to current position.
+     (if (featurep 'xemacs)
+         (car bookmarks)
+       (reverse (car bookmarks)))
+     (cdr bookmarks))))
+
+(defun bm-overlay-all()
+  "overlays in all buffer"
+  (mapcan (lambda (x) (if (listp x) x nil))
+          (remq
+           nil  (mapcar #'(lambda (buffer)
+                            (with-current-buffer buffer
+                              (bm-overlay－in-buffer))
+                            )(buffer-list)))))
+
+(defun bm-overlays-lifo-order(&optional all reverse)
+  (sort  (if all
+             (bm-overlay-all)
+           (bm-overlay－in-buffer))
+         #'(lambda(o1 o2)
+             (if reverse
+                 (< (overlay-get o1 'time) (overlay-get o2 'time))
+               (> (overlay-get o1 'time) (overlay-get o2 'time))))))
+
+
+(defun bm-find-lifo-next(&optional reverse)
+  (let ((sorted-bm-list (bm-overlays-lifo-order bm-cycle-all-buffers reverse))
+        ret)
+    (setq ret (loop with next   for i in sorted-bm-list
+                    until  (bm-equal  bm-current i) do (setq next i)
+                    finally return next))
+    (if ret ret
+      (car (last (bm-overlays-lifo-order bm-cycle-all-buffers reverse))))))
+
+;;;###autoload
+(defun bm-lifo-previous()
+  "Goto previous bookmark in LIFO order . (that is, most
+recently set ones come first, oldest ones come last)"
+  (interactive)
+  (let ((sorted-bm-list (bm-overlays-lifo-order bm-cycle-all-buffers t))
+        next)
+    (cond ((null sorted-bm-list)
+           (message "no next bookmark"))
+          ((or (null bm-current) (not (member bm-current sorted-bm-list)))
+           (switch-to-buffer (overlay-buffer (car sorted-bm-list)))
+           (bm-goto (car sorted-bm-list))
+           (setq bm-current  (car (last sorted-bm-list))))
+          (t
+           (switch-to-buffer (overlay-buffer bm-current))
+           (bm-goto bm-current)
+           (setq bm-current (bm-find-lifo-next t))))))
+
+;;;###autoload
+(defun bm-lifo-next()
+  "Goto next bookmark in LIFO order .(that is, most
+recently set ones come first, oldest ones come last)"
+  (interactive)
+  (let ((sorted-bm-list (bm-overlays-lifo-order bm-cycle-all-buffers))
+        next)
+    (cond ((null sorted-bm-list)
+           (message "no next bookmark"))
+          ((or (null bm-current) (not (member bm-current sorted-bm-list)))
+           (switch-to-buffer (overlay-buffer (car sorted-bm-list)))
+           (bm-goto (car sorted-bm-list))
+           (setq bm-current  (car (last sorted-bm-list))))
+          (t
+           (switch-to-buffer (overlay-buffer bm-current))
+           (bm-goto bm-current)
+           (setq bm-current (bm-find-lifo-next))))))
 
 ;;;###autoload
 (defun bm-next nil
+  (interactive)
+  (if bm-in-lifo-order
+      (bm-lifo-next)
+    (bm-common-next)))
+
+;;;###autoload
+(defun bm-common-next nil
   "Goto next bookmark."
   (interactive)
   (let ((bm-list-forward (cdr (bm-lists 'forward))))
@@ -815,9 +909,15 @@ EV is the mouse event."
     (bm-next)
     (select-window old-selected-window)))
 
-
 ;;;###autoload
 (defun bm-previous nil
+  (interactive)
+  (if bm-in-lifo-order
+      (bm-lifo-previous)
+    (bm-common-previous)))
+
+;;;###autoload
+(defun bm-common-previous nil
   "Goto previous bookmark."
   (interactive)
   (let ((bm-list-backward (car (bm-lists 'backward))))
@@ -1022,41 +1122,35 @@ Region defined by BEG and END."
 (defun bm-show-all nil
   "Show bookmarked lines in all buffers."
   (interactive)
-  (let ((lines
-         (save-excursion
-           (mapconcat #'(lambda (buffer)
-                          (set-buffer buffer)
-                          (bm-show-extract-bookmarks))
-                      (buffer-list) ""))))
-    (bm-show-display-lines lines)))
-
+  (bm-show-display-lines
+   (bm-show-extract-bookmarks bm-in-lifo-order t)))
 
 (defun bm-show nil
   "Show bookmarked lines in current buffer."
   (interactive)
-  (bm-show-display-lines (bm-show-extract-bookmarks)))
+  (bm-show-display-lines
+   (bm-show-extract-bookmarks bm-in-lifo-order nil)))
 
 
-(defun bm-show-extract-bookmarks nil
-  "Extract bookmarks from current buffer."
-  (let ((bookmarks (bm-lists)))
-    (mapconcat
-     #'(lambda (bm)
-         (let ((string
-                (format bm-show-line-format
-                        (format "%s:%d" (buffer-name) (count-lines (point-min) (overlay-start bm)))
-                        (or (overlay-get bm 'annotation) "")
-                        (buffer-substring (overlay-start bm) (overlay-end bm)))))
+(defun bm-show-extract-bookmarks (&optional lifo-order all)
+  "Extract bookmarks"
+  (mapconcat
+   #'(lambda (bm)
+       (with-current-buffer (overlay-buffer bm)
+         (let* ((line (buffer-substring (overlay-start bm) (overlay-end bm)))
+                (string
+                 (format bm-show-line-format
+                         (format "%s:%d" (buffer-name) (count-lines (point-min) (overlay-start bm)))
+                         (or (overlay-get bm 'annotation) "")
+                         (if (string-match "\n$" line) line (concat line "\n")))))
            (put-text-property 0 (length string) 'bm-buffer  (buffer-name)  string)
            (put-text-property 0 (length string) 'bm-bookmark  bm  string)
-           string))
-     (append
-      ;; xemacs has the list sorted after buffer position, while
-      ;; gnu emacs list is sorted relative to current position.
-      (if (featurep 'xemacs)
-          (car bookmarks)
-        (reverse (car bookmarks)))
-      (cdr bookmarks)) "")))
+           string)))
+   (if lifo-order
+       (bm-overlays-lifo-order all)
+     (if all (bm-overlay-all)
+       (bm-overlay－in-buffer)))
+   ""))
 
 
 (defun bm-show-display-lines (lines)
@@ -1227,13 +1321,14 @@ BUFFER-DATA is the content of `bm-repository-file'."
         (let ((pos (if buffer-size-match
                        (cdr (assoc 'position (car bookmarks)))
                      (bm-get-position-from-context (car bookmarks))))
+              (time (assoc 'time buffer-data))
               (annotation (cdr (assoc 'annotation (car bookmarks)))))
 
           ;; create bookmark if is inside buffer
           (when (and (<= (point-min) pos)
                      (<= pos (point-max)))
             (goto-char pos)
-            (bm-bookmark-add annotation)
+            (bm-bookmark-add annotation time)
             (setq count (1+ count)))
           (setq bookmarks (cdr bookmarks)))))
 
@@ -1260,6 +1355,7 @@ BUFFER-DATA is the content of `bm-repository-file'."
                                (let ((position (marker-position (overlay-get bm 'position))))
                                  (list
                                   (cons 'position position)
+                                  (cons 'time (overlay-get bm 'time))
                                   (cons 'annotation (overlay-get bm 'annotation))
                                   (cons 'before-context-string
                                         (let ((context-start
