@@ -638,30 +638,34 @@ If ANNOTATION is provided use this, and do not prompt for input.
 Only used if `bm-annotate-on-create' is true.
 
 Do nothing if bookmark is present."
-  (unless (bm-bookmark-at (point))
-    (let ((bookmark (make-overlay (bm-start-position) (bm-end-position)))
-          (hlface (if bm-buffer-persistence bm-persistent-face bm-face))
-          (hlface-fringe (if bm-buffer-persistence bm-fringe-persistent-face bm-fringe-face)))
-      ;; set market
-      (overlay-put bookmark 'time (or time (float-time)))
-      (overlay-put bookmark 'position (point-marker))
-      ;; select bookmark face
-      (when (bm-highlight-line)
-        (overlay-put bookmark 'face hlface))
-      (overlay-put bookmark 'evaporate t)
-      (overlay-put bookmark 'category 'bm)
-      (when (bm-highlight-fringe)
-        (overlay-put bookmark 'before-string (bm-get-fringe-marker)))
-      (if (or bm-annotate-on-create annotation)
-          (bm-bookmark-annotate bookmark annotation))
-      (unless (featurep 'xemacs)
-        ;; gnu emacs specific features
-        (overlay-put bookmark 'priority bm-priority)
-        (overlay-put bookmark 'modification-hooks '(bm-freeze))
-        (overlay-put bookmark 'insert-in-front-hooks '(bm-freeze-in-front))
-        (overlay-put bookmark 'insert-behind-hooks '(bm-freeze)))
-      (setq bm-current bookmark)
-      bookmark)))
+  (let((bookmark (bm-bookmark-at (point))))
+    (if bookmark
+        (progn (setq bm-current bookmark)
+               (overlay-put bookmark 'position (point-marker))
+               (overlay-put bookmark 'time (or time (float-time))))
+      (let ((bookmark (make-overlay (bm-start-position) (bm-end-position)))
+            (hlface (if bm-buffer-persistence bm-persistent-face bm-face))
+            (hlface-fringe (if bm-buffer-persistence bm-fringe-persistent-face bm-fringe-face)))
+        ;; set market
+        (overlay-put bookmark 'time (or time (float-time)))
+        (overlay-put bookmark 'position (point-marker))
+        ;; select bookmark face
+        (when (bm-highlight-line)
+          (overlay-put bookmark 'face hlface))
+        (overlay-put bookmark 'evaporate t)
+        (overlay-put bookmark 'category 'bm)
+        (when (bm-highlight-fringe)
+          (overlay-put bookmark 'before-string (bm-get-fringe-marker)))
+        (if (or bm-annotate-on-create annotation)
+            (bm-bookmark-annotate bookmark annotation))
+        (unless (featurep 'xemacs)
+          ;; gnu emacs specific features
+          (overlay-put bookmark 'priority bm-priority)
+          (overlay-put bookmark 'modification-hooks '(bm-freeze))
+          (overlay-put bookmark 'insert-in-front-hooks '(bm-freeze-in-front))
+          (overlay-put bookmark 'insert-behind-hooks '(bm-freeze)))
+        (setq bm-current bookmark)
+        bookmark))))
 
 
 (defun bm-bookmark-remove (&optional bookmark)
