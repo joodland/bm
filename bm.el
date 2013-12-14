@@ -1,6 +1,6 @@
 ;;; bm.el --- Visible bookmarks in buffer.
 
-;; Copyrigth (C) 2000-2011  Jo Odland
+;; Copyrigth (C) 2000-2013  Jo Odland
 
 ;; Author: Jo Odland <jo.odland(at)gmail.com>
 ;; Keywords: bookmark, highlight, faces, persistent
@@ -43,38 +43,45 @@
 ;;    - Toggle bookmarks with `bm-toggle' and navigate forward and
 ;;      backward in buffer with `bm-next' and `bm-previous'.
 ;;
-;;    - Different wrapping modes, see `bm-wrap-search' and `bm-wrap-immediately'.
-;;      Use `bm-toggle-wrapping' to turn wrapping on/off. Wrapping is only available
-;;      when `bm-cycle-all-buffers' is nil.
+;;    - Different wrapping modes, see `bm-wrap-search' and
+;;      `bm-wrap-immediately'. Use `bm-toggle-wrapping' to turn
+;;      wrapping on/off. Wrapping is only available when
+;;      `bm-cycle-all-buffers' is nil.
 ;;
-;;    - Navigate between bookmarks only in current buffer or cycle through all buffers.
-;;      Use `bm-cycle-all-buffers' to enable looking for bookmarks across all open buffers.
-;;      When cycling through bookmarks in all open buffers, the search will always wrap around.
+;;    - Navigate between bookmarks only in current buffer or cycle
+;;      through all buffers. Use `bm-cycle-all-buffers' to enable
+;;      looking for bookmarks across all open buffers. When cycling
+;;      through bookmarks in all open buffers, the search will always
+;;      wrap around.
 ;;
-;;    - Setting bookmarks based on a regexp, see `bm-bookmark-regexp' and
-;;      `bm-bookmark-regexp-region'.
+;;    - Setting bookmarks based on a regexp, see `bm-bookmark-regexp'
+;;      and `bm-bookmark-regexp-region'.
 ;;
 ;;    - Setting bookmark based on line number, see `bm-bookmark-line'.
 ;;
 ;;    - Goto line position or start of line, see `bm-goto-position'.
 ;;
-;;    - Persistent bookmarks (see below). Use `bm-toggle-buffer-persistence'
-;;      to enable/disable persistent bookmarks (buffer local).
+;;    - Persistent bookmarks (see below). Use
+;;      `bm-toggle-buffer-persistence' to enable/disable persistent
+;;      bookmarks (buffer local).
 ;;
-;;    - List bookmarks with annotations and context in a separate buffer,
-;;      see `bm-show' (current buffer) and `bm-show-all' (all open buffers).
-;;      See `bm-show-mode-map' for key bindings.
+;;    - List bookmarks with annotations and context in a separate
+;;      buffer, see `bm-show' (current buffer) and `bm-show-all' (all
+;;      open buffers). See `bm-show-mode-map' for key bindings.
 ;;
-;;    - Remove all bookmarks in current buffer with `bm-remove-all-current-buffer' and
-;;      all bookmarks in all open buffers with `bm-remove-all-all-buffers'.
+;;    - Remove all bookmarks in current buffer with
+;;      `bm-remove-all-current-buffer' and all bookmarks in all open
+;;      buffers with `bm-remove-all-all-buffers'.
 ;;
-;;    - Annotate bookmarks, see `bm-bookmark-annotate' and `bm-bookmark-show-annotation'.
-;;      The annotation is displayed in the messsage area when navigating to a bookmark.
-;;      Set the variable `bm-annotate-on-create' to t to be prompted for an annotation
-;;      when bookmark is created.
+;;    - Annotate bookmarks, see `bm-bookmark-annotate' and
+;;      `bm-bookmark-show-annotation'. The annotation is displayed in
+;;      the messsage area when navigating to a bookmark. Set the
+;;      variable `bm-annotate-on-create' to t to be prompted for an
+;;      annotation when bookmark is created.
 ;;
-;;    - Different bookmark styles, fringe-only, line-only or both,
-;;      see `bm-highlight-style'. It is possible to have fringe-markers on left or right side.
+;;    - Different bookmark styles, fringe-only, line-only or both, see
+;;      `bm-highlight-style'. It is possible to have fringe-markers on
+;;      left or right side.
 ;;
 
 
@@ -86,9 +93,12 @@
 ;;
 ;;   There are some incompatibilities with lazy-lock when using
 ;;   fill-paragraph. All bookmark below the paragraph being filled
-;;   will be lost. This issue can be resolved using the `jit-lock-mode'
-;;   introduced in GNU Emacs 21.1
+;;   will be lost. This issue can be resolved using the
+;;   `jit-lock-mode' introduced in GNU Emacs 21.1
 ;;
+;;   Bookmarks will be extended when inserting text (before, inside or
+;;   after) bookmark in XEmacs. This is due to the missing support for
+;;   overlay hooks i XEmacs.
 
 
 ;;; Installation:
@@ -208,119 +218,29 @@
 ;;  - The use of overlays for bookmarks was inspired by highline.el by
 ;;    Vinicius Jose Latorre <vinicius(at)cpqd.com.br>.
 ;;  - Thanks to Ben Key for XEmacs support.
-;;  - Thanks to Peter Heslin for notifying me on the incompability with
-;;    lazy-lock.
-;;  - Thanks to Christoph Conrad for adding support for goto line position
-;;    in bookmarks and simpler wrapping.
-;;  - Thanks to Jan Rehders for adding support for different bookmark styles.
-;;  - Thanks to Dan McKinley <mcfunley(at)gmail.com> for inspiration to add support
-;;    for listing bookmarks in all buffers, `bm-show-all'.
-;;    (http://www.emacswiki.org/cgi-bin/wiki/bm-ext.el)
-;;  - Thanks to Jonathan Kotta <jpkotta(at)gmail.com> for mouse support and fringe
-;;    markers on left or right side.
-;;  - Thanks to Juanma Barranquero <lekktu(at)gmail.com> for making `bm-show' an
-;;    electric window, cleaning up the code, finding and fixing bugs and
-;;    correcting spelling errors.
+;;  - Thanks to Peter Heslin for notifying me on the incompability
+;;    with lazy-lock.
+;;  - Thanks to Christoph Conrad for adding support for goto line
+;;    position in bookmarks and simpler wrapping.
+;;  - Thanks to Jan Rehders for adding support for different bookmark
+;;  - styles.
+;;  - Thanks to Dan McKinley <mcfunley(at)gmail.com> for inspiration
+;;    to add support for listing bookmarks in all buffers,
+;;    `bm-show-all'. (http://www.emacswiki.org/cgi-bin/wiki/bm-ext.el)
+;;  - Thanks to Jonathan Kotta <jpkotta(at)gmail.com> for mouse
+;;    support and fringe markers on left or right side.
+;;  - Thanks to Juanma Barranquero <lekktu(at)gmail.com> for making
+;;    `bm-show' an electric window, cleaning up the code, finding and
+;;    fixing bugs and correcting spelling errors.
+;;  - Thanks to jixiuf <jixiuf(at)gmail.com> for adding LIFO support
+;;    to bookmark navigation. See `bm-in-lifo-order' for more
+;;    information.
+
 
 
 ;;; Change log:
+;; See version history at Github, https://github.com/joodland/bm
 
-;;  Changes in 1.55
-;;   - Renamed function `bm-line-highlighted' to `bm-highlight-line'.
-;;   - Renamed function`bm-fringe-highlighted' to `bm-highlight-fringe'.
-;;   - Fixed bug(#32733) - `bm-toggle-buffer-persistence' does take
-;;     into account the value of `bm-highlight-style'.
-;;   - Cleaned up code.
-;;
-;;  Changes in 1.54
-;;   - Applied patch from Juanma Barranquero rewriting `bm-repository-save' and `bm-repository-load'.
-;;
-;;  Changes in 1.53
-;;   - Fixed `max-lisp-eval-depth' bug (#32249) in `bm-next' and `bm-previous' if no bookmark in buffer.
-;;   - Cleaned up code.
-;;
-;;  Changes in 1.52
-;;   - Cleaned up code.
-;;
-;;  Changes in 1.51
-;;   - Fixed bug(#31546) - emacs-nox
-;;
-;;  Changes in 1.50
-;;   - Fixed bug(#29772) - `bm-next' across buffers.
-;;   - Removed support for version 1 of repository file.
-;;   - Changed `bm-show' into an electric window.
-;;   - Cleaned up code.
-;;   - Minor bug fixes.
-;;
-;;  Changes in 1.49
-;;   - Removed used of `goto-line' due to compile warning in GNU Emacs 23.2.1.
-;;     Thanks to Juanma Barranquero for patch.
-;;   - Fixed bug in `bm-bookmark-regexp-region'. Thanks to Juanma Barranquero for patch.
-;;
-;;  Changes in 1.48
-;;   - Removed support for repository file format version 1.
-;;   - Cleaned up some code.
-;;
-;;  Changes in 1.45
-;;   - Changed `bm-show' to an electric window. Thanks to Juanma Barranquero for patch.
-;;
-;;  Changes in 1.44
-;;   - Fixed spelling. Cleaned up some code. Thanks to Juanma Barranquero for patch.
-;;
-;;  Changes in 1.43
-;;   - Fixed spelling. Thanks to Juanma Barranquero for patch.
-;;
-;;  Changes in 1.42
-;;   - Fixed bug(#29536) - Next/previous does not wrap when `bm-cycle-all-buffers' t
-;;     and only bookmarks in one buffer.
-;;
-;;  Changes in 1.41
-;;   - Updated documentation to satisfy `checkdoc'.
-;;
-;;  Changes in 1.38
-;;   - Added support for bookmark search across buffers. See `bm-cycle-all-buffers'.
-;;   - Added support for mouse navigation (#28863). See `bm-toggle-mouse', `bm-next-mouse'
-;;     and `bm-previous-mouse'.
-;;   - Added support for markers on the right fringe (#28863).
-;;
-;;  Changes in 1.36
-;;   - Added support for persistent bookmarks in non-file buffers (Info buffers, indirect-buffers).
-;;   - Fixed bug(#26077) - bm asks for annotation when restoring bookmarks for bookmarks which
-;;     already have an annotation.
-;;
-;;  Changes in 1.35
-;;   - Added utf-8 encoding on `bm-repository-file'
-;;   - Removed compile check on fringe support.
-;;
-;;  Changes in 1.34
-;;   - Added support for bookmarks in fringe (Patch from Jan Rehders <cmdkeen(at)gmx.de>)
-;;   - Fixed bugs with `bm-next', `bm-previous' and `bm-goto'.
-;;   - Removed line format variables, `bm-show-header-string' and `bm-show-format-string'.
-;;   - Added `bm-show-all' for displaying bookmarks in all buffers.
-;;
-;;  Changes in 1.32
-;;   - Added change log.
-;;
-;;  Changes in 1.31
-;;   - Renamed function `bm-extract' to `bm-show'
-;;   - Fixed annotation bug in `bm-bookmark-regexp-region'.
-;;
-;;  Changes in 1.30
-;;   - New format on file repository.
-;;   - Support for annotation of bookmarks. See variable `bm-annotate-on-create',
-;;     `bm-bookmark-annotate' and `bm-bookmark-show-annotation'.
-;;   - Added context to help restoring bookmarks correctly,
-;;     see `bm-bookmark-context-size'.
-;;   - Renamed function `bm-repository-empty' to `bm-repositoty-clear'.
-;;
-
-
-;;; Todo:
-;;
-;;  - Prevent the bookmark (overlay) from being extended when
-;;    inserting (before, inside or after) the bookmark in XEmacs. This
-;;    is due to the missing support for overlay hooks i XEmacs.
-;;
 
 
 ;;; Code:
