@@ -394,7 +394,7 @@ t, search in all open buffers."
   :type 'boolean
   :group 'bm)
 
-(defcustom bm-in-lifo-order t
+(defcustom bm-in-lifo-order nil
   "`bm-show' and `bm-show-all' list bookmarks in LIFO order,
 `bm-next' and `bm-previous' goto bookmark in LIFO order,
  (that is, most recently set ones come first, oldest ones come last)"
