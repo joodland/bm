@@ -7,7 +7,7 @@ It was created because I missed the bookmarks from M$ Visual Studio in GNU Emacs
 
 Features:
 ---------
-
+* Cycle through bookmarks in all open buffers in LIFO order (my frok version support)
 * Toggle bookmarks. Jump to next/previous bookmark.
 * Setting bookmarks based on a regexp. (Useful when searching logfiles.)
 * Mouse navigation.
@@ -51,6 +51,11 @@ Click on fringe to toggle bookmarks, and use mouse wheel to move between them.
 If you would like the markers on the right fringe instead of the left, add the following to line:
 
     (setq bm-marker 'bm-marker-right)
+    
+    (setq bm-highlight-style 'bm-highlight-only-fringe)
+    (setq bm-cycle-all-buffers t)
+    (setq bm-in-lifo-order t)
+    
 
 Reviews and comments:
 --------------------
