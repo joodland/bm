@@ -1,13 +1,15 @@
-Visible bookmarks in buffer for GNU Emacs 22.x / 23.x (XEmacs 21.x).
+Visible bookmarks in buffer for GNU Emacs 22.x / 23.x / 24.x (XEmacs 21.x).
 =====================
 
-This package provides visible, buffer local, bookmarks and the ability to jump forward and backward to the next bookmark.
+This package provides visible, buffer local, bookmarks and the ability
+to jump forward and backward to the next bookmark.
 
-It was created because I missed the bookmarks from M$ Visual Studio in GNU Emacs. I think they provide an easy way to navigate in a buffer.
+It was created because I missed the bookmarks from M$ Visual Studio in
+GNU Emacs. I think they provide an easy way to navigate in a buffer.
 
 Features:
 ---------
-* Cycle through bookmarks in all open buffers in LIFO order (my frok version support)
+* Cycle through bookmarks in all open buffers in LIFO order
 * Toggle bookmarks. Jump to next/previous bookmark.
 * Setting bookmarks based on a regexp. (Useful when searching logfiles.)
 * Mouse navigation.
@@ -51,11 +53,11 @@ Click on fringe to toggle bookmarks, and use mouse wheel to move between them.
 If you would like the markers on the right fringe instead of the left, add the following to line:
 
     (setq bm-marker 'bm-marker-right)
-    
+
     (setq bm-highlight-style 'bm-highlight-only-fringe)
     (setq bm-cycle-all-buffers t)
     (setq bm-in-lifo-order t)
-    
+
 
 Reviews and comments:
 --------------------
