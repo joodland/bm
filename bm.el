@@ -447,6 +447,14 @@ t, save bookmarks."
   :group 'bm)
 (make-variable-buffer-local 'bm-buffer-persistence)
 
+
+(defcustom bm-show-annotations t
+  "*Specify if annotations are shown by `bm-show' and
+`bm-show-all'."
+  :type 'boolean
+  :group 'bm)
+
+
 (defvar bm-restore-repository-on-load nil
   "Specify if repository should be restored when loading bm.
 
@@ -472,9 +480,6 @@ before bm is loaded.")
 
 (defconst bm-show-buffer-name "*bm-bookmarks*"
   "The name of the buffer used to show bookmarks by `bm-show'.")
-
-(defconst bm-show-line-format "%-20s %-20s %s"
-  "The format string used by `bm-header' and `bm-show-extract-bookmarks'.")
 
 (defvar bm-marker 'bm-marker-left
   "Fringe marker side. Left of right.")
@@ -1046,38 +1051,130 @@ Region defined by BEG and END."
 (defun bm-show-all nil
   "Show bookmarked lines in all buffers."
   (interactive)
-  (bm-show-display-lines
-   (bm-show-extract-bookmarks bm-in-lifo-order t)))
+  (apply #'bm-show-display-lines
+         (bm-show-extract-bookmarks bm-in-lifo-order t)))
 
 (defun bm-show nil
   "Show bookmarked lines in current buffer."
   (interactive)
-  (bm-show-display-lines
-   (bm-show-extract-bookmarks bm-in-lifo-order nil)))
+  (apply #'bm-show-display-lines
+         (bm-show-extract-bookmarks bm-in-lifo-order nil)))
 
+
+(defconst bm-header-buffer-name "File"
+  "Header used for the buffer name column in a `bm-show-all'
+buffer.")
+
+(defconst bm-header-line "Line"
+  "Header used for the line number column in a `bm-show' or
+`bm-show-all' buffer.")
+
+(defconst bm-header-annotation "Annotation"
+  "Header used for the annotation column in a `bm-show' or
+`bm-show-all' buffer.")
+
+(defconst bm-header-contents "Contents"
+  "Header used for the bookmarked line contents in a `bm-show' or
+`bm-show-all' buffer.")
+
+(defconst bm-annotation-width 20
+  "Number of columns used for the annotation column in `bm-show'
+or `bm-show-all' results.")
+
+(defun bm-find-file-line-max-width (bookmarks include-buffer-name)
+  "Return the width needed to display buffer name and line number.
+This is used by `bm-show' and `bm-show-all' to determine how wide
+they should make the display of the buffer name and line number
+in their buffer.  When INCLUDE-BUFFER-NAME is nil, as it is when
+we're called by `bm-show', the buffer name is not taken into
+account.  The smallest possible result from this function will be
+the combination of the header text separated by a colon,
+e.g. 9 for \"File:Line\"."
+  (apply #'max
+         ;; First consider the header line.
+         (if include-buffer-name
+                   (+ (length bm-header-buffer-name)
+                      ;; +1 for the colon separator.
+                      1
+                      (length bm-header-line))
+                 (length bm-header-line))
+         ;; Now consider all the bookmarks.
+         (mapcar (lambda (bm)
+                   (with-current-buffer (overlay-buffer bm)
+                     (let* ((line-number (count-lines (point-min)
+                                                      (overlay-start bm)))
+                            (line-width
+                             (length (number-to-string line-number))))
+                       (if include-buffer-name
+                           ;; +1 for the colon separator.
+                           (+ (length (buffer-name)) 1 line-width)
+                         line-width))))
+                 bookmarks)))
 
 (defun bm-show-extract-bookmarks (&optional lifo-order all)
-  "Extract bookmarks"
-  (mapconcat
-   #'(lambda (bm)
-       (with-current-buffer (overlay-buffer bm)
-         (let* ((line (buffer-substring (overlay-start bm) (overlay-end bm)))
-                (string
-                 (format bm-show-line-format
-                         (format "%s:%d" (buffer-name) (count-lines (point-min) (overlay-start bm)))
-                         (or (overlay-get bm 'annotation) "")
-                         (if (string-match "\n$" line) line (concat line "\n")))))
-           (put-text-property 0 (length string) 'bm-buffer  (buffer-name)  string)
-           (put-text-property 0 (length string) 'bm-bookmark  bm  string)
-           string)))
-   (if lifo-order
-       (bm-overlays-lifo-order all)
-     (if all (bm-overlay-all)
-       (bm-overlay-in-buffer)))
-   ""))
+  "Return (HEADER BOOKMARK-LIST) for displaying a list of bookmarks.
+Both are strings to be used in the bookmark lists provided to
+users by the likes of `bm-show' and `bm-show-all'."
+  ;; format-non-nil is just like format except it ignores any nil
+  ;; arguments.  For example, (format-non-nil "%s %s" "foo" nil "bar")
+  ;; yields "foo bar".  This is useful below where we conditionally
+  ;; omit annotations.
+  ;;
+  ;; lstrip strips trailing white space from STR.  lstrip was stolen
+  ;; from s.el and
+  ;; http://ergoemacs.org/emacs/modernization_elisp_lib_problem.html.
+  (cl-flet ((format-non-nil (format-string &rest args)
+              (apply #'format format-string (delete nil args)))
+            (lstrip (str)
+              (if (string-match "\\`[ \t\n\r]+" str)
+                  (replace-match "" t t str)
+                str)))
+    (let* ((bookmarks (if lifo-order
+                          (bm-overlays-lifo-order all)
+                        (if all (bm-overlay-all)
+                          (bm-overlay-in-buffer))))
+           (file-line-width (bm-find-file-line-max-width bookmarks all))
+           (format-string (concat (format "%%-%ds" file-line-width)
+                                  (when bm-show-annotations
+                                    (format " %%-%ds" bm-annotation-width))
+                                  " %s")))
+      (list
+       ;; The header
+       (format-non-nil format-string
+                       (if all
+                           (format "%s:%s" bm-header-buffer-name
+                                   bm-header-line)
+                         bm-header-line)
+                       (when bm-show-annotations
+                         bm-header-annotation)
+                       bm-header-contents)
+       ;; The bookmark list
+       (mapconcat
+        #'(lambda (bm)
+            (with-current-buffer (overlay-buffer bm)
+              (let* ((line (lstrip (buffer-substring (overlay-start bm)
+                                                     (overlay-end bm))))
+                     (line-num (count-lines (point-min) (overlay-start bm)))
+                     (string
+                      (format-non-nil format-string
+                                      (if all
+                                          (format "%s:%d" (buffer-name)
+                                                  line-num)
+                                        line-num)
+                                      (when bm-show-annotations
+                                        (or (overlay-get bm 'annotation) ""))
+                                      (if (string-match "\n$" line)
+                                          line
+                                        (concat line "\n")))))
+                (put-text-property 0 (length string) 'bm-buffer (buffer-name)
+                                   string)
+                (put-text-property 0 (length string) 'bm-bookmark bm string)
+                string)))
+        bookmarks
+        "")))))
 
 
-(defun bm-show-display-lines (lines)
+(defun bm-show-display-lines (header lines)
   "Show bookmarked LINES to the `bm-show-buffer-name' buffer."
   (if (= (length lines) 0)
       (message "No bookmarks defined.")
@@ -1085,6 +1182,12 @@ Region defined by BEG and END."
       (set-buffer standard-output)
       (insert lines)
       (bm-show-mode)
+      ;; Can only set header-line-format after bm-show-mode has called
+      ;; kill-all-local-variables.  This use of propertize allows the
+      ;; header line to line up with the left fringe, thanks
+      ;; http://www.emacswiki.org/emacs/HeaderLine!
+      (setq header-line-format
+            (concat (propertize " " 'display '((space :align-to 0))) header))
       (setq buffer-read-only t)
       (when bm-electric-show
         (pop-to-buffer (current-buffer))))))
@@ -1126,13 +1229,6 @@ Region defined by BEG and END."
   "Keymap for `bm-show-mode'.")
 
 
-(defconst bm-header
-  (concat
-   (propertize " " 'display '(space :align-to (+ left-margin 1)))
-   (format bm-show-line-format "File:Line" "Annotation" "Contents"))
-  "Format for `header-line-format' in `bm-show-buffer-name' buffer.")
-
-
 (defun bm-show-next (lines)
   "Goto next bookmark in `bm-show' buffer.
 LINES the number of lines to move forward."
@@ -1153,7 +1249,6 @@ LINES the number of lines to move backwards."
   "Major mode for `bm-show' buffers."
   (interactive)
   (kill-all-local-variables)
-  (setq header-line-format bm-header)
   (setq major-mode 'bm-show-mode)
   (setq mode-name "bm-bookmarks")
   (use-local-map bm-show-mode-map))
