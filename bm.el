@@ -714,7 +714,7 @@ in the specified direction."
          (cons (remq nil (mapcar 'bm-bookmarkp (car (overlay-lists))))
                (remq nil (mapcar 'bm-bookmarkp (cdr (overlay-lists))))))))
 
-(defun bm-overlay－in-buffer()
+(defun bm-overlay-in-buffer()
   "overlays in current buffer"
   (let ((bookmarks (bm-lists)))
     (append
@@ -731,13 +731,13 @@ in the specified direction."
           (remq
            nil  (mapcar #'(lambda (buffer)
                             (with-current-buffer buffer
-                              (bm-overlay－in-buffer))
+                              (bm-overlay-in-buffer))
                             )(buffer-list)))))
 
 (defun bm-overlays-lifo-order(&optional all reverse)
   (sort  (if all
              (bm-overlay-all)
-           (bm-overlay－in-buffer))
+           (bm-overlay-in-buffer))
          #'(lambda(o1 o2)
              (if reverse
                  (< (overlay-get o1 'time) (overlay-get o2 'time))
@@ -1073,7 +1073,7 @@ Region defined by BEG and END."
    (if lifo-order
        (bm-overlays-lifo-order all)
      (if all (bm-overlay-all)
-       (bm-overlay－in-buffer)))
+       (bm-overlay-in-buffer)))
    ""))
 
 
