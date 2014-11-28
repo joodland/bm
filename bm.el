@@ -401,6 +401,11 @@ t, search in all open buffers."
   :type 'boolean
   :group 'bm)
 
+(defcustom temporary-bookmark-p nil
+  "when visit a bookmark using `bm-next' or `bm-previsour'  the bookmark
+will be auto removed if this option is not nil."
+  :type 'boolean
+  :group 'bm)
 
 (defcustom bm-recenter nil
   "*Specify if the buffer should be recentered after jumping to a bookmark."
@@ -556,13 +561,16 @@ Either the bookmark at point or the BOOKMARK specified as parameter."
     marker-string))
 
 
-(defun bm-bookmark-add (&optional annotation time)
+(defun bm-bookmark-add (&optional annotation time temporary-bookmark)
   "Add bookmark at current line.
 
 If ANNOTATION is provided use this, and do not prompt for input.
 Only used if `bm-annotate-on-create' is true.
 
-Do nothing if bookmark is present."
+TIME is useful when `bm-in-lifo-order' is not nil. 
+
+if TEMPORARY-BOOKMARK not nil,the bookmark will be removed
+when `bm-next' or `bm-previous' navigate to this bookmark."
   (let((bookmark (bm-bookmark-at (point))))
     (if bookmark
         (progn (setq bm-current bookmark)
@@ -573,6 +581,8 @@ Do nothing if bookmark is present."
             (hlface-fringe (if bm-buffer-persistence bm-fringe-persistent-face bm-fringe-face)))
         ;; set market
         (overlay-put bookmark 'time (or time (float-time)))
+        (overlay-put bookmark 'temporary-bookmark
+                     (if temporary-bookmark t temporary-bookmark-p))
         (overlay-put bookmark 'position (point-marker))
         ;; select bookmark face
         (when (bm-highlight-line)
@@ -997,7 +1007,9 @@ EV is the mouse event."
             (recenter))
         (let ((annotation (overlay-get bookmark 'annotation)))
           (if annotation
-              (message annotation))))
+              (message annotation)))
+        (when  (overlay-get bookmark 'temporary-bookmark)
+          (bm-bookmark-remove  bookmark)))
     (message "Bookmark not found.")))
 
 
@@ -1341,13 +1353,14 @@ BUFFER-DATA is the content of `bm-repository-file'."
                        (cdr (assoc 'position (car bookmarks)))
                      (bm-get-position-from-context (car bookmarks))))
               (time (assoc 'time buffer-data))
+              (temporary-bookmark (assoc 'temporary-bookmark buffer-data))
               (annotation (cdr (assoc 'annotation (car bookmarks)))))
 
           ;; create bookmark if is inside buffer
           (when (and (<= (point-min) pos)
                      (<= pos (point-max)))
             (goto-char pos)
-            (bm-bookmark-add annotation time)
+            (bm-bookmark-add annotation time temporary-bookmark)
             (setq count (1+ count)))
           (setq bookmarks (cdr bookmarks)))))
 
@@ -1375,6 +1388,7 @@ BUFFER-DATA is the content of `bm-repository-file'."
                                  (list
                                   (cons 'position position)
                                   (cons 'time (overlay-get bm 'time))
+                                  (cons 'temporary-bookmark (overlay-get bm 'temporary-bookmark))
                                   (cons 'annotation (overlay-get bm 'annotation))
                                   (cons 'before-context-string
                                         (let ((context-start

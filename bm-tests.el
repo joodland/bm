@@ -63,3 +63,41 @@ This is the last line.")
       (bm-next)
       (should (bm-equal (bm-bookmark-at (point)) bookmark)))
     ))
+
+(ert-deftest bm-bookmark--bm-temporary-bookmark ()
+  (with-temp-buffer
+    (insert text)
+    (goto-line 2)
+    (bm-bookmark-add nil nil t)
+    (goto-line 5)
+    (bm-bookmark-add nil nil t)
+
+    (should (= (bm-count) 2))
+
+    (goto-char (point-min))
+    (bm-next)
+    (should (= (bm-count) 1))
+
+    (goto-char (point-min))
+    (bm-previous)
+    (should (= (bm-count) 0))
+    ))
+(ert-deftest bm-bookmark--option-bm-temporary-bookmark ()
+  (let ((temporary-bookmark-p t))
+    (with-temp-buffer
+      (insert text)
+      (goto-line 2)
+      (bm-bookmark-add)
+      (goto-line 5)
+      (bm-bookmark-add)
+
+      (should (= (bm-count) 2))
+
+      (goto-char (point-min))
+      (bm-next)
+      (should (= (bm-count) 1))
+
+      (goto-char (point-min))
+      (bm-previous)
+      (should (= (bm-count) 0)))
+    ))

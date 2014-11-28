@@ -9,6 +9,7 @@ GNU Emacs. I think they provide an easy way to navigate in a buffer.
 
 Features:
 ---------
+* Auto remove bookmark after jump to it by `bm-next` or `bm-previous`:
 * Cycle through bookmarks in all open buffers in LIFO order
 * Toggle bookmarks. Jump to next/previous bookmark.
 * Setting bookmarks based on a regexp. (Useful when searching logfiles.)
@@ -62,6 +63,13 @@ If you would like to cycle through bookmarks in *all* open buffers, add the foll
 
     (setq bm-cycle-all-buffers t)
 
+If you would like to remove bookmark after jump to it by `bm-next` or `bm-previous`:
+
+    (setq temporary-bookmark-p t)
+
+or if you want use this feature in your library:
+
+    (bm-bookmark-add nil nil t)
 
 
 Reviews and comments:
