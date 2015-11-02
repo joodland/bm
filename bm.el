@@ -696,6 +696,7 @@ http://www.gnu.org/s/emacs/manual/html_node/elisp/Overlay-Properties.html"
 (defun bm-bookmarkp (bookmark)
   "Return the BOOKMARK if overlay is a bookmark."
   (if (and (overlayp bookmark)
+           (overlay-buffer bookmark)
            (string= (overlay-get bookmark 'category) "bm"))
       bookmark
     nil))
