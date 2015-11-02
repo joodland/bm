@@ -101,3 +101,19 @@ This is the last line.")
       (bm-previous)
       (should (= (bm-count) 0)))
     ))
+(ert-deftest bm-bookmarkp-test ()
+  (with-temp-buffer
+    (insert text)
+    (goto-line 2)
+    (bm-bookmark-add)
+    (let ((bm (bm-bookmark-at (point))))
+      (should (bm-bookmarkp bm))
+
+      (bm-bookmark-remove bm)
+      ;; after removed. bm-bookmarkp should return nil
+      (should (not (bm-bookmarkp bm)))
+      (should (not (bm-bookmarkp nil)))
+      (should (not (bm-bookmarkp (bm-bookmark-at (point)))))
+      )))
+
+
