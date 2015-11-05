@@ -3,7 +3,9 @@
 
 ;; to run tests from command line
 ;; > emacs -batch -l ert -l bm-tests.el -f ert-run-tests-batch-and-exit
-
+;;
+;; to run from inside of Emacs
+;; M-x ert-run-tests-interactively
 
 
 (defvar text "This is a multi line text.
@@ -14,7 +16,56 @@ The next line is blank.
 The previous line is blank.
 This is the last line.")
 
-(ert-deftest bm-bookmark-add-test ()
+(ert-deftest bm-bookmark--bm-first ()
+  "Test that `bm-goto-position' is preserved when wrapping to bookmark on the first line."
+  (with-temp-buffer
+    (insert text)
+
+    (goto-char (point-min))
+    (forward-char 3)
+    (bm-bookmark-add)
+
+    (let ((bookmark-pos (point)))
+      (forward-line 2)
+      (bm-next)
+
+      (should (= bookmark-pos (point))))
+  ))
+
+
+(ert-deftest bm-bookmark--github-bug-10 ()
+  "Reproducing bug from GitHub, https://github.com/joodland/bm/issues/10"
+  (with-temp-buffer
+    (insert "line1
+line2
+line3
+line4
+")
+    (goto-line 1)
+    (bm-bookmark-add)
+    (goto-line 3)
+    (bm-bookmark-add)
+
+    (should (= (bm-count) 2))
+
+    ;; insert a newline
+    (goto-char (point-at-bol))
+    (insert "\n")
+
+    (goto-char (point-min))
+    (bm-previous)
+    (bm-previous)
+
+    (should (= (line-number-at-pos) 1))
+
+    (goto-char (point-min))
+    (bm-next)
+    (bm-next)
+
+    (should (= (line-number-at-pos) 1))
+    ))
+
+(ert-deftest bm-bookmark--add-test ()
   (with-temp-buffer
     (insert text)
     (goto-line 2)
@@ -64,6 +115,7 @@ This is the last line.")
       (should (bm-equal (bm-bookmark-at (point)) bookmark)))
     ))
 
+
 (ert-deftest bm-bookmark--bm-temporary-bookmark ()
   (with-temp-buffer
     (insert text)
@@ -82,6 +134,8 @@ This is the last line.")
     (bm-previous)
     (should (= (bm-count) 0))
     ))
+
+
 (ert-deftest bm-bookmark--option-bm-temporary-bookmark ()
   (let ((temporary-bookmark-p t))
     (with-temp-buffer
