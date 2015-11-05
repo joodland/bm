@@ -949,16 +949,22 @@ EV is the mouse event."
 
 (defun bm-first nil
   "Goto first bookmark in buffer."
-  (goto-char (point-min))
-  (unless (bm-bookmark-at (point)) ; bookmark at beginning of buffer, stop looking
-    (bm-next)))
+  (let ((bookmark (bm-bookmark-at (point-min))))
+    (if bookmark
+        ;; display correct behaviour even when standing on a bookmark
+        (bm-goto bookmark)
+      (goto-char (point-min))
+      (bm-next))))
 
 
 (defun bm-last nil
   "Goto last bookmark in buffer."
-  (goto-char (point-max))
-  (unless (bm-bookmark-at (point)) ; bookmark at end of buffer, stop looking
-    (bm-previous)))
+  (let ((bookmark (bm-bookmark-at (point-max))))
+    (if bookmark
+        ;; display correct behaviour even when standing on a bookmark
+        (bm-goto bookmark)
+      (goto-char (point-max))
+      (bm-previous))))
 
 
 (defun bm-remove-all-all-buffers nil
