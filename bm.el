@@ -1,6 +1,6 @@
 ;;; bm.el --- Visible bookmarks in buffer.
 
-;; Copyrigth (C) 2000-2013  Jo Odland
+;; Copyright (C) 2000-2013  Jo Odland
 
 ;; Author: Jo Odland <jo.odland(at)gmail.com>
 ;; Keywords: bookmark, highlight, faces, persistent
@@ -75,7 +75,7 @@
 ;;
 ;;    - Annotate bookmarks, see `bm-bookmark-annotate' and
 ;;      `bm-bookmark-show-annotation'. The annotation is displayed in
-;;      the messsage area when navigating to a bookmark. Set the
+;;      the message area when navigating to a bookmark. Set the
 ;;      variable `bm-annotate-on-create' to t to be prompted for an
 ;;      annotation when bookmark is created.
 ;;
