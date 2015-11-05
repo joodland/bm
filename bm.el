@@ -833,8 +833,8 @@ recently set ones come first, oldest ones come last)"
       (message "No next bookmark.")
     (if (or bm-wrapped bm-wrap-immediately)
         (progn
-          (bm-first)
-          (message "Wrapped."))
+          (message "Wrapped.")
+          (bm-first))
       (setq bm-wrapped t)       ; wrap on next goto
       (message "No next bookmark."))))
 
@@ -878,8 +878,8 @@ EV is the mouse event."
       (message "No previous bookmark.")
     (if (or bm-wrapped bm-wrap-immediately)
         (progn
-          (bm-last)
-          (message "Wrapped."))
+          (message "Wrapped.")
+          (bm-last))
       (setq bm-wrapped t)       ; wrap on next goto
       (message "No previous bookmark."))))
 
