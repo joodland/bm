@@ -1007,7 +1007,11 @@ EV is the mouse event."
   (if (bm-bookmarkp bookmark)
       (progn
         (if bm-goto-position
-            (goto-char (marker-position (overlay-get bookmark 'position)))
+            (goto-char (max
+                        ;; sometimes marker-position is before start of overlay
+                        ;; marker is not updated when overlay hooks are called.
+                        (overlay-start bookmark)
+                        (marker-position (overlay-get bookmark 'position))))
           (goto-char (overlay-start bookmark)))
         (setq bm-wrapped nil)           ; turn off wrapped state
         (if bm-recenter
