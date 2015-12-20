@@ -247,7 +247,7 @@
 ;;
 
 (eval-and-compile
-  (require 'cl)
+  (require 'cl-lib)
   ;; avoid compile warning on unbound variable
   (require 'info)
 
@@ -701,6 +701,14 @@ http://www.gnu.org/s/emacs/manual/html_node/elisp/Overlay-Properties.html"
       bookmark
     nil))
 
+(defun bm-bookmark-is-visible (bookmark)
+  "Return the BOOKMARK if the BOOKMARK is in the visible part of the buffer."
+  (if (and (bm-bookmarkp bookmark)
+           (>= (overlay-start bookmark) (point-min))
+           (<= (overlay-end bookmark) (point-max)))
+      bookmark
+    nil))
+
 
 (defun bm-bookmark-at (point)
   "Get bookmark at POINT."
@@ -723,12 +731,12 @@ If optional argument DIRECTION is provided, only return bookmarks
 in the specified direction."
   (overlay-recenter (point))
   (cond ((equal 'forward direction)
-         (cons nil (remq nil (mapcar 'bm-bookmarkp (cdr (overlay-lists))))))
+         (cons nil (remq nil (mapcar 'bm-bookmark-is-visible (cdr (overlay-lists))))))
         ((equal 'backward direction)
-         (cons (remq nil (mapcar 'bm-bookmarkp (car (overlay-lists)))) nil))
+         (cons (remq nil (mapcar 'bm-bookmark-is-visible (car (overlay-lists)))) nil))
         (t
-         (cons (remq nil (mapcar 'bm-bookmarkp (car (overlay-lists))))
-               (remq nil (mapcar 'bm-bookmarkp (cdr (overlay-lists))))))))
+         (cons (remq nil (mapcar 'bm-bookmark-is-visible (car (overlay-lists))))
+               (remq nil (mapcar 'bm-bookmark-is-visible (cdr (overlay-lists))))))))
 
 (defun bm-overlay-in-buffer()
   "overlays in current buffer"
@@ -743,12 +751,12 @@ in the specified direction."
 
 (defun bm-overlay-all()
   "overlays in all buffer"
-  (mapcan (lambda (x) (if (listp x) x nil))
-          (remq
-           nil  (mapcar #'(lambda (buffer)
-                            (with-current-buffer buffer
-                              (bm-overlay-in-buffer))
-                            )(buffer-list)))))
+  (cl-mapcan (lambda (x) (if (listp x) x nil))
+             (remq
+              nil  (mapcar #'(lambda (buffer)
+                               (with-current-buffer buffer
+                                 (bm-overlay-in-buffer))
+                               )(buffer-list)))))
 
 (defun bm-overlays-lifo-order(&optional all reverse)
   (sort  (if all
@@ -1385,41 +1393,44 @@ BUFFER-DATA is the content of `bm-repository-file'."
   (interactive)
   (if (bm-buffer-file-name)
       (if bm-buffer-persistence
-          (let ((buffer-data
-                 (list
-                  (bm-buffer-file-name)
-                  (cons 'version bm-bookmark-repository-version)
-                  (cons 'size (point-max))
-                  (cons 'timestamp (current-time))
-                  (cons 'bookmarks
-                        (let ((bookmarks (bm-lists)))
-                          (mapcar
-                           #'(lambda (bm)
-                               (let ((position (marker-position (overlay-get bm 'position))))
-                                 (list
-                                  (cons 'position position)
-                                  (cons 'time (overlay-get bm 'time))
-                                  (cons 'temporary-bookmark (overlay-get bm 'temporary-bookmark))
-                                  (cons 'annotation (overlay-get bm 'annotation))
-                                  (cons 'before-context-string
-                                        (let ((context-start
-                                               (max (point-min) (- position bm-bookmark-context-size))))
-                                          (buffer-substring-no-properties context-start position)))
-                                  (cons 'after-context-string
-                                        (let ((context-end
-                                               (min (+ position bm-bookmark-context-size) (point-max))))
-                                          (buffer-substring-no-properties position context-end))))))
-                           (append (car bookmarks) (cdr bookmarks))))))))
+          (save-restriction
+            (widen)
+            (let ((buffer-data
+                   (list
+                    (bm-buffer-file-name)
+                    (cons 'version bm-bookmark-repository-version)
+                    (cons 'size (point-max))
+                    (cons 'timestamp (current-time))
+                    (cons 'bookmarks
+                          (let ((bookmarks (bm-lists)))
+                            (mapcar
+                             #'(lambda (bm)
+                                 (let ((position (marker-position (overlay-get bm 'position))))
+                                   (list
+                                    (cons 'position position)
+                                    (cons 'time (overlay-get bm 'time))
+                                    (cons 'temporary-bookmark (overlay-get bm 'temporary-bookmark))
+                                    (cons 'annotation (overlay-get bm 'annotation))
+                                    (cons 'before-context-string
+                                          (let ((context-start
+                                                 (max (point-min) (- position bm-bookmark-context-size))))
+                                            (buffer-substring-no-properties context-start position)))
+                                    (cons 'after-context-string
+                                          (let ((context-end
+                                                 (min (+ position bm-bookmark-context-size) (point-max))))
+                                            (buffer-substring-no-properties position context-end))))))
+                             (append (car bookmarks) (cdr bookmarks))))))))
 
-            ;; remove if exists
-            (bm-repository-remove (car buffer-data))
+              ;; remove if exists
+              (bm-repository-remove (car buffer-data))
 
-            ;; add if there exists bookmarks
-            (let ((count (length (cdr (assoc 'bookmarks buffer-data)))))
-              (if (> count 0)
-                  (bm-repository-add buffer-data))
-              (if (called-interactively-p 'interactive)
-                  (message "%d bookmark(s) saved to repository." count))))
+              ;; add if there exists bookmarks
+              (let ((count (length (cdr (assoc 'bookmarks buffer-data)))))
+                (if (> count 0)
+                    (bm-repository-add buffer-data))
+                (if (called-interactively-p 'interactive)
+                    (message "%d bookmark(s) saved to repository." count)))
+              ))
 
         (if (called-interactively-p 'interactive)
             (message "No bookmarks saved. Buffer is not persistent.")))
