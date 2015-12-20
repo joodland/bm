@@ -7,7 +7,6 @@
 ;; to run from inside of Emacs
 ;; M-x ert-run-tests-interactively
 
-
 (defvar text "This is a multi line text.
 This is the second line.
 This is the thrid line.
@@ -15,6 +14,25 @@ The next line is blank.
 
 The previous line is blank.
 This is the last line.")
+
+(ert-deftest bm-bookmark--narrow-to-region-next ()
+  ""
+  (with-temp-buffer
+    (insert text)
+
+    (bm-bookmark-line 1)
+    (bm-bookmark-line 6)
+
+    (narrow-to-region (progn (goto-line 3) (point-at-bol))
+                      (progn (goto-line 5) (point-at-bol)))
+
+    (goto-char (point-min))
+    (bm-next)
+
+    (should (= (point) (point-min)))
+    ))
+    
+
 
 (ert-deftest bm-bookmark--bm-first ()
   "Test that `bm-goto-position' is preserved when wrapping to bookmark on the first line."
