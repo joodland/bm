@@ -731,12 +731,12 @@ If optional argument DIRECTION is provided, only return bookmarks
 in the specified direction."
   (overlay-recenter (point))
   (cond ((equal 'forward direction)
-         (cons nil (remq nil (mapcar 'bm-bookmark-is-visible (cdr (overlay-lists))))))
+         (cons nil (remq nil (mapcar 'bm-bookmarkp (cdr (overlay-lists))))))
         ((equal 'backward direction)
-         (cons (remq nil (mapcar 'bm-bookmark-is-visible (car (overlay-lists)))) nil))
+         (cons (remq nil (mapcar 'bm-bookmarkp (car (overlay-lists)))) nil))
         (t
-         (cons (remq nil (mapcar 'bm-bookmark-is-visible (car (overlay-lists))))
-               (remq nil (mapcar 'bm-bookmark-is-visible (cdr (overlay-lists))))))))
+         (cons (remq nil (mapcar 'bm-bookmarkp (car (overlay-lists))))
+               (remq nil (mapcar 'bm-bookmarkp (cdr (overlay-lists))))))))
 
 (defun bm-overlay-in-buffer()
   "overlays in current buffer"
