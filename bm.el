@@ -256,9 +256,6 @@
     (require 'overlay)))
 
 
-(defconst bm-version "$Id$"
-  "CVS version of bm.el.")
-
 (defconst bm-bookmark-repository-version 2
   "The repository version.")
 
