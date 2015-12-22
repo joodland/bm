@@ -15,6 +15,30 @@ The next line is blank.
 The previous line is blank.
 This is the last line.")
 
+
+(ert-deftest bm-bookmark--bm-remove ()
+  ""
+  (with-temp-buffer
+    (insert text)
+
+    (bm-bookmark-line 1)
+    (bm-bookmark-line 5)
+
+    (should (= (bm-count) 2))
+
+    (goto-char (point-min))
+    (bm-next)
+    (bm-bookmark-remove)
+
+    (should (= (bm-count) 1))
+
+    (bm-next)
+    (bm-bookmark-remove)
+
+    (should (= (bm-count) 0))
+    ))
+
+
 (ert-deftest bm-bookmark--narrow-to-region-next ()
   ""
   (with-temp-buffer

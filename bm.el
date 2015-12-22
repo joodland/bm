@@ -602,8 +602,8 @@ when `bm-next' or `bm-previous' navigate to this bookmark."
 
 (defun bm-bookmark-remove (&optional bookmark)
   "Remove bookmark at point or the BOOKMARK specified as parameter."
-  (if (null bookmark)
-      (setq bookmark (bm-bookmark-at (point))))
+  (unless bookmark)
+      (setq bookmark (bm-bookmark-at (point)))
 
   (if (bm-bookmarkp bookmark)
       (delete-overlay bookmark)))
