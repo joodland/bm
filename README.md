@@ -1,3 +1,5 @@
+[![MELPA](http://melpa.org/packages/bm-badge.svg)](http://melpa.org/#/bm)
+
 Visible bookmarks in buffer for GNU Emacs 22.x / 23.x / 24.x (XEmacs 21.x).
 =====================
 
