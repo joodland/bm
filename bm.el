@@ -602,8 +602,8 @@ when `bm-next' or `bm-previous' navigate to this bookmark."
 
 (defun bm-bookmark-remove (&optional bookmark)
   "Remove bookmark at point or the BOOKMARK specified as parameter."
-  (unless bookmark)
-      (setq bookmark (bm-bookmark-at (point)))
+  (if (null bookmark)
+      (setq bookmark (bm-bookmark-at (point))))
 
   (if (bm-bookmarkp bookmark)
       (delete-overlay bookmark)))
@@ -631,7 +631,7 @@ EV is the mouse event."
 
 (defun bm-count nil
   "Count the number of bookmarks in buffer."
-  (let ((bookmarks (bm-lists)))
+  (let ((bookmarks (bm-lists t 'bm-bookmark-is-visible)))
     (+ (length (car bookmarks)) (length (cdr bookmarks)))))
 
 
@@ -718,22 +718,28 @@ http://www.gnu.org/s/emacs/manual/html_node/elisp/Overlay-Properties.html"
     bookmark))
 
 
-(defun bm-lists (&optional direction)
+(defun bm-lists (&optional direction predicate)
   "Return a pair of lists giving all the bookmarks of the current buffer.
 The car has all the bookmarks before the overlay center;
 the cdr has all the bookmarks after the overlay center.
 A bookmark implementation of `overlay-lists'.
 
 If optional argument DIRECTION is provided, only return bookmarks
-in the specified direction."
+in the specified direction.
+
+If optional argument PREDICATE is provided, it is used as a
+selection criteria for filtering the lists."
+  (if (null predicate)
+    (setq predicate 'bm-bookmarkp))
+  
   (overlay-recenter (point))
   (cond ((equal 'forward direction)
-         (cons nil (remq nil (mapcar 'bm-bookmarkp (cdr (overlay-lists))))))
+         (cons nil (remq nil (mapcar predicate (cdr (overlay-lists))))))
         ((equal 'backward direction)
-         (cons (remq nil (mapcar 'bm-bookmarkp (car (overlay-lists)))) nil))
+         (cons (remq nil (mapcar predicate (car (overlay-lists)))) nil))
         (t
-         (cons (remq nil (mapcar 'bm-bookmarkp (car (overlay-lists))))
-               (remq nil (mapcar 'bm-bookmarkp (cdr (overlay-lists))))))))
+         (cons (remq nil (mapcar predicate (car (overlay-lists))))
+               (remq nil (mapcar predicate (cdr (overlay-lists))))))))
 
 (defun bm-overlay-in-buffer()
   "overlays in current buffer"
@@ -821,7 +827,7 @@ recently set ones come first, oldest ones come last)"
 (defun bm-common-next nil
   "Goto next bookmark."
   (interactive)
-  (let ((bm-list-forward (cdr (bm-lists 'forward))))
+  (let ((bm-list-forward (cdr (bm-lists 'forward 'bm-bookmark-is-visible))))
     ;; remove bookmark at point
     (if (bm-equal (bm-bookmark-at (point)) (car bm-list-forward))
         (setq bm-list-forward (cdr bm-list-forward)))
@@ -865,7 +871,7 @@ EV is the mouse event."
 (defun bm-common-previous nil
   "Goto previous bookmark."
   (interactive)
-  (let ((bm-list-backward (car (bm-lists 'backward))))
+  (let ((bm-list-backward (car (bm-lists 'backward 'bm-bookmark-is-visible))))
     ;; remove bookmark at point
     (if (bm-equal (bm-bookmark-at (point)) (car bm-list-backward))
         (setq bm-list-backward (cdr bm-list-backward)))
@@ -985,7 +991,7 @@ EV is the mouse event."
 (defun bm-remove-all-current-buffer nil
   "Delete all visible bookmarks in current buffer."
   (interactive)
-  (let ((bookmarks (bm-lists)))
+  (let ((bookmarks (bm-lists t 'bm-bookmark-is-visible)))
     (mapc 'bm-bookmark-remove (append (car bookmarks) (cdr bookmarks)))))
 
 
@@ -1520,6 +1526,8 @@ BUFFER-DATA is the content of `bm-repository-file'."
   "Get a unique key for the repository, even for non-file buffers."
   (cond ((equal 'Info-mode major-mode)
          (concat "[info:" Info-current-file "]"))
+        ((null (buffer-file-name))
+         (concat "[tmp: " (buffer-name) "]"))
         ((not (null (buffer-base-buffer)))
          (concat "[indirect:" (buffer-name) ":" (buffer-file-name (buffer-base-buffer)) "]"))
         (t (buffer-file-name))))

@@ -16,8 +16,8 @@ The previous line is blank.
 This is the last line.")
 
 
-(ert-deftest bm-bookmark--bm-remove ()
-  ""
+(ert-deftest bm-bookmark--bm-bookmark-remove ()
+  "Simple test of `bm-bookmark-remove'"
   (with-temp-buffer
     (insert text)
 
@@ -39,23 +39,95 @@ This is the last line.")
     ))
 
 
-(ert-deftest bm-bookmark--narrow-to-region-next ()
-  ""
+(ert-deftest bm-bookmark--narrow-to-region--1 ()
+  "Test behaviour in narrowed buffers."
   (with-temp-buffer
     (insert text)
 
     (bm-bookmark-line 1)
     (bm-bookmark-line 6)
 
+
+    (should (= (bm-count) 2))
+
     (narrow-to-region (progn (goto-line 3) (point-at-bol))
                       (progn (goto-line 5) (point-at-bol)))
 
+    ;; don't count bookmarks outside narrowing
+    (should (= (bm-count) 0))
+
+    ;; do not jump forward
     (goto-char (point-min))
     (bm-next)
 
     (should (= (point) (point-min)))
+
+    ;; do not jump backward
+    (goto-char (point-max))
+    (bm-previous)
+
+    (should (= (point) (point-max)))
     ))
+
+
+(ert-deftest bm-bookmark--narrow-to-region--2 ()
+  "Test behaviour in narrowed buffers."
+  (with-temp-buffer
+    (insert text)
+
+    (bm-bookmark-line 1)
+    (bm-bookmark-line 4)
+    (bm-bookmark-line 6)
+
+    (should (= (bm-count) 3))
+
+    (narrow-to-region (progn (goto-line 3) (point-at-bol))
+                      (progn (goto-line 5) (point-at-bol)))
+
+    (should (= (bm-count) 1))
+
+    (bm-remove-all-current-buffer)
+
+    (widen)
+    (should (= (bm-count) 2))
+
+    ))
+
+
+(ert-deftest bm-bookmark--save-and-restore ()
+  "Test saving and restoring persistent bookmarks."
+  (make-variable-buffer-local 'bm-repository-file)
+  (setq bm-repository-file (make-temp-file "bm-repo"))
+  (with-temp-buffer
+    (insert text)
+
+    (bm-toggle-buffer-persistence)
+
+    (bm-bookmark-line 2)
+    (bm-bookmark-line 4)
+    (bm-bookmark-line 6)
+
+    (bm-save)
+    (should (= (bm-count) 3))
+
+    (bm-remove-all-current-buffer)
+    (should (= (bm-count) 0))
+
+    (bm-load-and-restore)
+    (should (= (bm-count) 3))
+
+    (goto-char (point-min))
+
+    (bm-next)
+    (should (= (line-number-at-pos) 2))
+
+    (bm-next)
+    (should (= (line-number-at-pos) 4))
+
+    (bm-next)
+    (should (= (line-number-at-pos) 6))
     
+    ))
 
 
 (ert-deftest bm-bookmark--bm-first ()
