@@ -248,6 +248,7 @@
 
 (eval-and-compile
   (require 'cl-lib)
+  (require 'cl-macs)
   ;; avoid compile warning on unbound variable
   (require 'info)
 
@@ -774,7 +775,7 @@ selection criteria for filtering the lists."
 (defun bm-find-lifo-next(&optional reverse)
   (let ((sorted-bm-list (bm-overlays-lifo-order bm-cycle-all-buffers reverse))
         ret)
-    (setq ret (loop with next   for i in sorted-bm-list
+    (setq ret (cl-loop with next   for i in sorted-bm-list
                     until  (bm-equal  bm-current i) do (setq next i)
                     finally return next))
     (if ret ret
