@@ -1,6 +1,7 @@
 [![MELPA](http://melpa.org/packages/bm-badge.svg)](http://melpa.org/#/bm)
+[![MELPA](http://stable.melpa.org/packages/bm-badge.svg)](http://melpa.org/#/bm)
 
-Visible bookmarks in buffer for GNU Emacs 22.x / 23.x / 24.x (XEmacs 21.x).
+Visible bookmarks in buffer for GNU Emacs 22.x / 23.x / 24.x / 25.x (XEmacs 21.x).
 =====================
 
 This package provides visible, buffer local, bookmarks and the ability
@@ -8,6 +9,7 @@ to jump forward and backward to the next bookmark.
 
 It was created because I missed the bookmarks from M$ Visual Studio in
 GNU Emacs. I think they provide an easy way to navigate in a buffer.
+
 
 Features:
 ---------
@@ -23,6 +25,7 @@ Features:
 * List bookmarks (in all buffers) in a separate buffer.
 * Cycle through bookmarks in all open buffers.
 
+
 Installation:
 -------------
 
@@ -35,6 +38,7 @@ or
     (autoload 'bm-toggle   "bm" "Toggle bookmark in current buffer." t)
     (autoload 'bm-next     "bm" "Goto bookmark."                     t)
     (autoload 'bm-previous "bm" "Goto previous bookmark."            t)
+
 
 Configuration:
 --------------
