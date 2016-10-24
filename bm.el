@@ -1189,7 +1189,8 @@ users by the likes of `bm-show' and `bm-show-all'."
             (with-current-buffer (overlay-buffer bm)
               (let* ((line (lstrip (buffer-substring (overlay-start bm)
                                                      (overlay-end bm))))
-                     (line-num (count-lines (point-min) (overlay-start bm)))
+                     ;; line numbers start on 1
+                     (line-num (+ 1 (count-lines (point-min) (overlay-start bm)))) 
                      (string
                       (format-non-nil format-string
                                       (if all
