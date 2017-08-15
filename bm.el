@@ -1298,16 +1298,22 @@ LINES the number of lines to move backwards."
       (progn
         (setq bm-buffer-persistence nil)
         (bm-repository-remove (bm-buffer-file-name)) ; remove from repository
+        (bm-redraw-bookmarks)
         (message "Bookmarks in buffer are not persistent."))
     ;; turn on
-    (if (not (null (bm-buffer-file-name)))
-        (progn
-          (setq bm-buffer-persistence (not bm-buffer-persistence))
-          (bm-buffer-save)			; add to repository
-          (message "Bookmarks in buffer are persistent."))
-      (message "Unable to set persistent mode on a non-file buffer.")))
+    (if (and (not (file-directory-p bm-repository-file)) (file-writable-p bm-repository-file))
+        (if (not (null (bm-buffer-file-name)))
+            (progn
+              (setq bm-buffer-persistence (not bm-buffer-persistence))
+              (bm-buffer-save)			; add to repository
+              (bm-redraw-bookmarks)
+              (message "Bookmarks in buffer are persistent."))
+          (message "Unable to set persistent mode on a non-file buffer."))
+      (message "Repository file '%s' not writeable" bm-repository-file))))
+    
 
-  ;; change color on bookmarks
+(defun bm-redraw-bookmarks nil
+  "Update color on bookmarks after persistent state has changed."
   (let ((bookmarks (bm-lists)))
     (mapc #'(lambda (bookmark)
               (when (bm-highlight-line)
