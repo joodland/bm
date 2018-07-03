@@ -26,7 +26,7 @@
 
 ;;; Description:
 ;;
-;; Create/remove a standard Emacs bookmark everytime you toggle a
+;; Create/remove a standard Emacs bookmark every time you toggle a
 ;; bm.el bookmark. This code is experimental.
 ;;
 ;; This code is related to a GitHub issue,
@@ -49,7 +49,7 @@
 (defun bm-bookmark-add--sync (&optional annotation time temporary-bookmark)
   "Add a standard Emacs bookmarks when setting a bm-bookmark."
   ;; create a unique name for the bookmark
-  (let ((name (concat (buffer-name)     
+  (let ((name (concat (buffer-name)
                       " l:" (int-to-string
                              (count-lines (point-min) (point))))))
     ;; store the bookmark name as an annotation
