@@ -26,6 +26,14 @@ Features:
 * Cycle through bookmarks in all open buffers.
 
 
+Known Limitations:
+------------------
+
+There are some incompatibilities with lazy-lock when using
+fill-paragraph. All bookmark below the paragraph being filled will be
+lost. This issue can be resolved using the `jit-lock-mode'.
+
+
 Installation:
 -------------
 
