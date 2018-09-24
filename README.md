@@ -112,9 +112,6 @@ Configuring bm.el with [use-package](https://github.com/jwiegley/use-package)
              ;; Loading the repository from file when on start up.
              (add-hook' after-init-hook 'bm-repository-load)
 
-             ;; Restoring bookmarks when on file find.
-             (add-hook 'find-file-hooks 'bm-buffer-restore)
-
              ;; Saving bookmarks
              (add-hook 'kill-buffer-hook #'bm-buffer-save)
 
