@@ -126,7 +126,7 @@ This is the last line.")
 
     (bm-next)
     (should (= (line-number-at-pos) 6))
-    
+
     ))
 
 
@@ -269,6 +269,8 @@ line4
       (bm-previous)
       (should (= (bm-count) 0)))
     ))
+
+
 (ert-deftest bm-bookmarkp-test ()
   (with-temp-buffer
     (insert text)
