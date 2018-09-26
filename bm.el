@@ -426,7 +426,9 @@ t, goto position on the line where the bookmark was set."
   :group 'bm)
 
 
-(defcustom bm-repository-file (expand-file-name "~/.bm-repository")
+(defcustom bm-repository-file (if (file-exists-p (expand-file-name "~/.bm-repository")) ; use the old path if it exists
+                                  (expand-file-name "~/.bm-repository")
+                                (expand-file-name "bm-repository" user-emacs-directory))
   "*Filename to store persistent bookmarks across sessions.
 
 nil, the repository will not be persistent."
@@ -457,6 +459,16 @@ t, save bookmarks."
   :type 'boolean
   :group 'bm)
 
+(defcustom bm-verbosity-level 2
+  "*Verbosity level.
+The default is 2, then `bm' will let you know about what is going
+on, similar to before. A setting of 1, only errors will be
+displayed it will be silent otherwise. Finally, a setting of 0
+keeps `bm' of ever outputting anything."
+  :type '(choice (const :tag "Silent" 0)
+                 (const :tag "Errors" 1)
+                 (const :tag "Info" 2))
+  :group 'bm)
 
 (defvar bm-restore-repository-on-load nil
   "Specify if repository should be restored when loading bm.
@@ -514,8 +526,8 @@ If ANNOTATION is provided use this, and not prompt for input."
         (if (null annotation)
             (setq annotation (read-from-minibuffer "Annotation: " nil nil nil 'bm-annotation-history)))
         (overlay-put bookmark 'annotation annotation))
-    (if (called-interactively-p 'interactive) (message "No bookmark at point"))))
-
+    (if (and (called-interactively-p 'interactive) (> bm-verbosity-level 0))
+        (message "No bookmark at point"))))
 
 (defun bm-bookmark-show-annotation (&optional bookmark)
   "Show annotation for bookmark.
@@ -525,9 +537,13 @@ Either the bookmark at point or the BOOKMARK specified as parameter."
       (setq bookmark (bm-bookmark-at (point))))
 
   (if (bm-bookmarkp bookmark)
-      (message (or (overlay-get bookmark 'annotation)
-                   "No annotation for current bookmark."))
-    (message "No bookmark at current line.")))
+      (let ((annotation (overlay-get bookmark 'annotation)))
+        (if annotation
+            (message annotation)
+          (when (> bm-verbosity-level 0)
+            (message "No annotation for current bookmark."))))
+    (when (> bm-verbosity-level 0)
+      (message "No bookmark at current line."))))
 
 (defun bm-highlight-line ()
   "Test if line is highlighted."
@@ -789,7 +805,8 @@ recently set ones come first, oldest ones come last)"
   (let ((sorted-bm-list (bm-overlays-lifo-order bm-cycle-all-buffers t))
         next)
     (cond ((null sorted-bm-list)
-           (message "no next bookmark"))
+           (when (> bm-verbosity-level 0)
+             (message "No next bookmark")))
           ((or (null bm-current) (not (member bm-current sorted-bm-list)))
            (switch-to-buffer (overlay-buffer (car sorted-bm-list)))
            (bm-goto (car sorted-bm-list))
@@ -807,7 +824,8 @@ recently set ones come first, oldest ones come last)"
   (let ((sorted-bm-list (bm-overlays-lifo-order bm-cycle-all-buffers))
         next)
     (cond ((null sorted-bm-list)
-           (message "no next bookmark"))
+           (when (> bm-verbosity-level 0)
+             (message "No next bookmark")))
           ((or (null bm-current) (not (member bm-current sorted-bm-list)))
            (switch-to-buffer (overlay-buffer (car sorted-bm-list)))
            (bm-goto (car sorted-bm-list))
@@ -837,18 +855,22 @@ recently set ones come first, oldest ones come last)"
         (bm-goto (car bm-list-forward))
       (cond (bm-cycle-all-buffers (bm-first-in-next-buffer))
             (bm-wrap-search (bm-wrap-forward))
-            (t (message "No next bookmark."))))))
+            (t (when (> bm-verbosity-level 0)
+                 (message "No next bookmark.")))))))
 
 (defun bm-wrap-forward nil
   "Goto next bookmark, wrapping."
   (if (= (bm-count) 0)
-      (message "No next bookmark.")
+      (when (> bm-verbosity-level 0)
+        (message "No next bookmark."))
     (if (or bm-wrapped bm-wrap-immediately)
         (progn
-          (message "Wrapped.")
+          (when (> bm-verbosity-level 1)
+            (message "Wrapped."))
           (bm-first))
       (setq bm-wrapped t)       ; wrap on next goto
-      (message "No next bookmark."))))
+      (when (> bm-verbosity-level 0)
+        (message "No next bookmark.")))))
 
 
 ;;;###autoload
@@ -882,18 +904,22 @@ EV is the mouse event."
 
       (cond (bm-cycle-all-buffers (bm-last-in-previous-buffer))
             (bm-wrap-search (bm-wrap-backward))
-            (t (message "No previous bookmark."))))))
+            (t (when (> bm-verbosity-level 0)
+                 (message "No previous bookmark.")))))))
 
 (defun bm-wrap-backward nil
   "Goto previous bookmark, wrapping."
   (if (= (bm-count) 0)
-      (message "No previous bookmark.")
+      (when (> bm-verbosity-level 1)
+        (message "No previous bookmark."))
     (if (or bm-wrapped bm-wrap-immediately)
         (progn
-          (message "Wrapped.")
+          (when (> bm-verbosity-level 1)
+            (message "Wrapped."))
           (bm-last))
       (setq bm-wrapped t)       ; wrap on next goto
-      (message "No previous bookmark."))))
+      (when (> bm-verbosity-level 0)
+        (message "No previous bookmark.")))))
 
 
 ;;;###autoload
@@ -925,13 +951,15 @@ EV is the mouse event."
         (progn
           (switch-to-buffer (car buffers))
           (bury-buffer current)
-          (message "Switched to '%s'" (car buffers))
+          (when (> bm-verbosity-level 1)
+            (message "Switched to '%s'" (car buffers)))
           (bm-first))
       ;; no bookmarks found in other open buffers,
       ;; wrap in current buffer?
       (if bm-wrap-search
           (bm-wrap-forward)
-        (message "No bookmarks found in other open buffers.")))))
+        (when (> bm-verbosity-level 0)
+          (message "No bookmarks found in other open buffers."))))))
 
 
 (defun bm-last-in-previous-buffer nil
@@ -950,13 +978,15 @@ EV is the mouse event."
     (if buffers
         (progn
           (switch-to-buffer (car buffers))
-          (message "Switched to '%s'" (car buffers))
+          (when (> bm-verbosity-level 1)
+            (message "Switched to '%s'" (car buffers)))
           (bm-last))
       ;; no bookmarks found in other open buffers,
       ;; wrap in current buffer?
       (if bm-wrap-search
           (bm-wrap-backward)
-        (message "No bookmarks found in other open buffers.")))))
+        (when (> bm-verbosity-level 0)
+          (message "No bookmarks found in other open buffers."))))))
 
 
 (defun bm-first nil
@@ -1033,7 +1063,8 @@ EV is the mouse event."
               (message annotation)))
         (when  (overlay-get bookmark 'temporary-bookmark)
           (bm-bookmark-remove  bookmark)))
-    (message "Bookmark not found.")))
+    (when (> bm-verbosity-level 0)
+      (message "Bookmark not found."))))
 
 
 (defun bm-bookmark-regexp nil
@@ -1061,7 +1092,8 @@ Region defined by BEG and END."
         (bm-bookmark-add annotation)
         (setq count (1+ count))
         (forward-line 1)))
-    (message "%d bookmark(s) created." count)))
+    (when (> bm-verbosity-level 1)
+      (message "%d bookmark(s) created." count))))
 
 
 (defun bm-bookmark-line (line)
@@ -1073,7 +1105,8 @@ Region defined by BEG and END."
                       (forward-line (1- line)))))
     (if (zerop remaining)
         (bm-bookmark-add)
-      (message "Unable to set bookmark at line %d. Only %d lines in the buffer." line (- line remaining 1))
+      (when (> bm-verbosity-level 0)
+        (message "Unable to set bookmark at line %d. Only %d lines in the buffer." line (- line remaining 1)))
       (goto-char here))))
 
 
@@ -1213,7 +1246,8 @@ users by the likes of `bm-show' and `bm-show-all'."
 (defun bm-show-display-lines (header lines)
   "Show bookmarked LINES to the `bm-show-buffer-name' buffer."
   (if (= (length lines) 0)
-      (message "No bookmarks defined.")
+      (when (> bm-verbosity-level 0)
+        (message "No bookmarks defined."))
     (with-output-to-temp-buffer bm-show-buffer-name
       (set-buffer standard-output)
       (insert lines)
@@ -1235,7 +1269,8 @@ users by the likes of `bm-show' and `bm-show-all'."
   (let ((buffer-name (get-text-property (point) 'bm-buffer))
         (bookmark (get-text-property (point) 'bm-bookmark)))
     (if (null buffer-name)
-        (message "No bookmark at this line.")
+        (when (> bm-verbosity-level  0)
+          (message "No bookmark at this line."))
       (pop-to-buffer (get-buffer buffer-name))
       (bm-goto bookmark)
       (when bm-electric-show (bm-show-quit-window)))))
@@ -1247,7 +1282,8 @@ users by the likes of `bm-show' and `bm-show-all'."
   (let ((buffer-name (get-text-property (point) 'bm-buffer))
         (bookmark (get-text-property (point) 'bm-bookmark)))
     (if (null buffer-name)
-        (message "No bookmark at this line.")
+        (when (> bm-verbosity-level 0)
+          (message "No bookmark at this line."))
       (let ((current-buffer (current-buffer)))
         (pop-to-buffer (get-buffer buffer-name))
         (bm-goto bookmark)
@@ -1299,18 +1335,22 @@ LINES the number of lines to move backwards."
         (setq bm-buffer-persistence nil)
         (bm-repository-remove (bm-buffer-file-name)) ; remove from repository
         (bm-redraw-bookmarks)
-        (message "Bookmarks in buffer are not persistent."))
+        (when (> bm-verbosity-level 1)
+          (message "Bookmarks in buffer are not persistent.")))
     ;; turn on
     (if (and (not (file-directory-p bm-repository-file)) (file-writable-p bm-repository-file))
         (if (not (null (bm-buffer-file-name)))
             (progn
               (setq bm-buffer-persistence (not bm-buffer-persistence))
-              (bm-buffer-save)			; add to repository
+              (bm-buffer-save)          ; add to repository
               (bm-redraw-bookmarks)
-              (message "Bookmarks in buffer are persistent."))
-          (message "Unable to set persistent mode on a non-file buffer."))
-      (message "Repository file '%s' not writeable" bm-repository-file))))
-    
+              (when (> bm-verbosity-level 1)
+                (message "Bookmarks in buffer are persistent.")))
+          (when (> bm-verbosity-level 0)
+            (message "Unable to set persistent mode on a non-file buffer.")))
+      (when (> bm-verbosity-level 0)
+        (message "Repository file '%s' not writeable" bm-repository-file)))))
+
 
 (defun bm-redraw-bookmarks nil
   "Update color on bookmarks after persistent state has changed."
@@ -1356,8 +1396,10 @@ otherwise we use the context after."
           (cond ((= version 2)
                  (bm-buffer-restore-2 buffer-data))
                 (t
-                 (message "Unknown data format. Version %d" version))))
-      (if (called-interactively-p 'interactive) (message "No bookmarks in repository.")))))
+                 (when (> bm-verbosity-level 0)
+                   (message "Unknown data format. Version %d" version)))))
+      (if (and (called-interactively-p 'interactive) (> bm-verbosity-level 0))
+          (message "No bookmarks in repository.")))))
 
 
 (defun bm-buffer-restore-all nil
@@ -1394,9 +1436,10 @@ BUFFER-DATA is the content of `bm-repository-file'."
             (setq count (1+ count)))
           (setq bookmarks (cdr bookmarks)))))
 
-    (if buffer-size-match
-        (message "%d bookmark(s) restored." count)
-      (message "%d bookmark(s) restored based on context." count))))
+    (when (> bm-verbosity-level 1)
+      (if buffer-size-match
+          (message "%d bookmark(s) restored." count)
+        (message "%d bookmark(s) restored based on context." count)))))
 
 
 (defun bm-buffer-save nil
@@ -1439,14 +1482,14 @@ BUFFER-DATA is the content of `bm-repository-file'."
               (let ((count (length (cdr (assoc 'bookmarks buffer-data)))))
                 (if (> count 0)
                     (bm-repository-add buffer-data))
-                (if (called-interactively-p 'interactive)
+                (if (and (called-interactively-p 'interactive) (> bm-verbosity-level 1))
                     (message "%d bookmark(s) saved to repository." count)))
               ))
 
-        (if (called-interactively-p 'interactive)
+        (if (and (called-interactively-p 'interactive) (> bm-verbosity-level 1))
             (message "No bookmarks saved. Buffer is not persistent.")))
 
-    (if (called-interactively-p 'interactive)
+    (if (and (called-interactively-p 'interactive) (> bm-verbosity-level 1))
         (message "Unable to save bookmarks in non-file buffers."))))
 
 
@@ -1488,12 +1531,15 @@ BUFFER-DATA is the content of `bm-repository-file'."
     (setq file bm-repository-file))
   (when file
     (condition-case nil
-        (setq bm-repository (with-temp-buffer
-                              (insert-file-contents file)
-                              (goto-char (point-min))
-                              (read (current-buffer))))
-      (error (message "Cannot read repository at %s" file)))))
+        (setq bm-repository (bm-repository-read-file file))
+      (error "Cannot read repository at %s" file))))
 
+(defun bm-repository-read-file (file)
+  "Read the resposity from the FILE specified. Return the repositoty."
+  (with-temp-buffer
+    (insert-file-contents file)
+    (goto-char (point-min))
+    (read (current-buffer))))
 
 (defun bm-repository-save (&optional file)
   "Save the repository to the FILE specified or to `bm-repository-file'."
@@ -1507,7 +1553,7 @@ BUFFER-DATA is the content of `bm-repository-file'."
           (insert "Do not edit this file.\n")
           (prin1 bm-repository (current-buffer))
           (insert "\n"))
-      (error (message "Cannot save repository to %s" file)))))
+      (error "Cannot save repository to %s" file))))
 
 
 (defun bm-repository-clear nil
