@@ -1,6 +1,6 @@
-;;; bm.el --- Visible bookmarks in buffer.
+;;; bm.el --- Visible bookmarks in buffer. -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2000-2015  Jo Odland
+;; Copyright (C) 2000-2018  Jo Odland
 
 ;; Author: Jo Odland <jo.odland(at)gmail.com>
 ;; Keywords: bookmark, highlight, faces, persistent
@@ -591,8 +591,7 @@ when `bm-next' or `bm-previous' navigate to this bookmark."
                (overlay-put bookmark 'position (point-marker))
                (overlay-put bookmark 'time (or time (float-time))))
       (let ((bookmark (make-overlay (bm-start-position) (bm-end-position)))
-            (hlface (if bm-buffer-persistence bm-persistent-face bm-face))
-            (hlface-fringe (if bm-buffer-persistence bm-fringe-persistent-face bm-fringe-face)))
+            (hlface (if bm-buffer-persistence bm-persistent-face bm-face)))
         ;; set market
         (overlay-put bookmark 'time (or time (float-time)))
         (overlay-put bookmark 'temporary-bookmark
@@ -674,6 +673,7 @@ When called after, the length of the modification is passed as LEN.
 
 See Overlay Properties in the Emacs manual for more information:
 http://www.gnu.org/s/emacs/manual/html_node/elisp/Overlay-Properties.html"
+  (ignore begin end len)
   (if after
       (move-overlay overlay (bm-start-position) (bm-end-position))))
 
@@ -690,6 +690,7 @@ When called after, the length of the modification is passed as LEN.
 
 See Overlay Properties in the Emacs manual for more information:
 http://www.gnu.org/s/emacs/manual/html_node/elisp/Overlay-Properties.html"
+  (ignore begin end len)
   (if after
       (let ((bm-start (overlay-start overlay)))
         (if bm-start
@@ -802,8 +803,7 @@ selection criteria for filtering the lists."
   "Goto previous bookmark in LIFO order . (that is, most
 recently set ones come first, oldest ones come last)"
   (interactive)
-  (let ((sorted-bm-list (bm-overlays-lifo-order bm-cycle-all-buffers t))
-        next)
+  (let ((sorted-bm-list (bm-overlays-lifo-order bm-cycle-all-buffers t)))
     (cond ((null sorted-bm-list)
            (when (> bm-verbosity-level 0)
              (message "No next bookmark")))
@@ -821,8 +821,7 @@ recently set ones come first, oldest ones come last)"
   "Goto next bookmark in LIFO order .(that is, most
 recently set ones come first, oldest ones come last)"
   (interactive)
-  (let ((sorted-bm-list (bm-overlays-lifo-order bm-cycle-all-buffers))
-        next)
+  (let ((sorted-bm-list (bm-overlays-lifo-order bm-cycle-all-buffers)))
     (cond ((null sorted-bm-list)
            (when (> bm-verbosity-level 0)
              (message "No next bookmark")))
