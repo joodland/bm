@@ -1548,7 +1548,7 @@ BUFFER-DATA is the content of `bm-repository-file'."
   (unless file
     (setq file bm-repository-file))
   (when (> bm-verbosity-level 1)
-    (message "Writing bookmarks from: %s" file))
+    (message "Writing bookmarks to: %s" file))
   (when file
     (condition-case nil
         (with-temp-file file
