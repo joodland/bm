@@ -1535,6 +1535,9 @@ BUFFER-DATA is the content of `bm-repository-file'."
 
 (defun bm-repository-read-file (file)
   "Read the resposity from the FILE specified. Return the repositoty."
+  (when (> bm-verbosity-level 1)
+    (message "Reading bookmarks from: %s" file))
+
   (with-temp-buffer
     (insert-file-contents file)
     (goto-char (point-min))
@@ -1544,6 +1547,8 @@ BUFFER-DATA is the content of `bm-repository-file'."
   "Save the repository to the FILE specified or to `bm-repository-file'."
   (unless file
     (setq file bm-repository-file))
+  (when (> bm-verbosity-level 1)
+    (message "Writing bookmarks from: %s" file))
   (when file
     (condition-case nil
         (with-temp-file file
@@ -1559,20 +1564,6 @@ BUFFER-DATA is the content of `bm-repository-file'."
   "Clear the repository."
   (interactive)
   (setq bm-repository nil))
-
-
-(defun bm-load-and-restore nil
-  "Load bookmarks from persistent repository and restore them."
-  (interactive)
-  (bm-repository-load)
-  (bm-buffer-restore-all))
-
-
-(defun bm-save nil
-  "Save bookmarks to persistent repository."
-  (interactive)
-  (bm-buffer-save-all)
-  (bm-repository-save))
 
 
 (defun bm-buffer-file-name nil
