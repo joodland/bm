@@ -1,0 +1,24 @@
+language: generic
+sudo: no
+env:
+  # - EVM_EMACS=emacs-24.1-travis
+  # - EVM_EMACS=emacs-24.2-travis
+  # - EVM_EMACS=emacs-24.3-travis
+  # - EVM_EMACS=emacs-24.4-travis
+  # - EVM_EMACS=emacs-24.5-travis
+  # - EVM_EMACS=emacs-25.1-travis
+  # - EVM_EMACS=emacs-25.2-travis
+  # - EVM_EMACS=emacs-25.3-travis
+  - EVM_EMACS=emacs-26.1-travis
+  # - EVM_EMACS=emacs-git-snapshot-travis
+before_install:
+    - export PATH="/home/travis/.evm/bin:$PATH"
+    - git clone https://github.com/rejeep/evm.git /home/travis/.evm
+    - evm config path /tmp
+
+install:
+  - evm install $EVM_EMACS --use --skip
+  - emacs -Q --batch --eval '(setq byte-compile-error-on-warn t)' -f batch-byte-compile bm.el
+
+script:
+  - emacs -batch -l ert -l bm-tests.el -f ert-run-tests-batch-and-exit
