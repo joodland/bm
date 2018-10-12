@@ -97,39 +97,40 @@ This is the last line.")
 (ert-deftest bm-bookmark--save-and-restore ()
   "Test saving and restoring persistent bookmarks."
   (with-temp-buffer
-    (let ((tmp-file (make-temp-file "bm-repository-")))
+    (make-variable-buffer-local 'bm-repository-file)
+    (setq bm-repository-file (make-temp-file "bm-repository-"))
 
-      (insert text)
+    (insert text)
 
-      (bm-toggle-buffer-persistence)
+    (bm-toggle-buffer-persistence)
 
-      (bm-bookmark-line 2)
-      (bm-bookmark-line 4)
-      (bm-bookmark-line 6)
+    (bm-bookmark-line 2)
+    (bm-bookmark-line 4)
+    (bm-bookmark-line 6)
 
-      (bm-buffer-save-all)
-      (bm-repository-save tmp-file)
-      (should (= (bm-count) 3))
+    (bm-buffer-save-all)
+    (bm-repository-save)
+    (should (= (bm-count) 3))
 
-      (bm-remove-all-current-buffer)
-      (should (= (bm-count) 0))
+    (bm-remove-all-current-buffer)
+    (should (= (bm-count) 0))
 
-      (bm-repository-load tmp-file)
-      (bm-buffer-restore-all)
-      (should (= (bm-count) 3))
+    (bm-repository-load)
+    (bm-buffer-restore-all)
+    (should (= (bm-count) 3))
 
-      (goto-char (point-min))
+    (goto-char (point-min))
 
-      (bm-next)
-      (should (= (line-number-at-pos) 2))
+    (bm-next)
+    (should (= (line-number-at-pos) 2))
 
-      (bm-next)
-      (should (= (line-number-at-pos) 4))
+    (bm-next)
+    (should (= (line-number-at-pos) 4))
 
-      (bm-next)
-      (should (= (line-number-at-pos) 6))
+    (bm-next)
+    (should (= (line-number-at-pos) 6))
 
-      )))
+    ))
 
 
 (ert-deftest bm-bookmark--bm-first ()
