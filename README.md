@@ -111,7 +111,7 @@ Configuring bm.el with [use-package](https://github.com/jwiegley/use-package)
              (setq-default bm-buffer-persistence t)
 
              ;; Loading the repository from file when on start up.
-             (add-hook' after-init-hook 'bm-repository-load)
+             (add-hook 'after-init-hook 'bm-repository-load)
 
              ;; Saving bookmarks
              (add-hook 'kill-buffer-hook #'bm-buffer-save)
