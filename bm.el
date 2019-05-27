@@ -145,11 +145,15 @@
 ;;
 ;;   Since there are number of different packages that helps with
 ;;   configuring the mode line, it is hard to provide integrations.
-;;   Below is an example on how to add it to the standard Emacs mode
+;;   Below is two examples on how to add it to the standard Emacs mode
 ;;   line:
 ;;
 ;;     (add-to-list 'mode-line-position '(:eval (bm-modeline-info)) t)
-
+;;
+;;   or
+;;
+;;     (setq global-mode-string '(:eval (bm-modeline-info)))
+;;
 
 
 
