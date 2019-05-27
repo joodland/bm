@@ -288,3 +288,17 @@ line4
       (should (not (bm-bookmarkp nil)))
       (should (not (bm-bookmarkp (bm-bookmark-at (point)))))
       )))
+
+
+(ert-deftest bm-bookmark--modeline-test ()
+  (with-temp-buffer
+    (insert text)
+    (goto-line 2)
+    (bm-bookmark-add)
+
+    (should (string= (bm-modeline-info) " bm(0:1)"))
+
+    (goto-char (point-max))
+
+    (should (string= (bm-modeline-info) " bm(1:0)"))
+    ))

@@ -1,3 +1,4 @@
+
 ;;; bm.el --- Visible bookmarks in buffer. -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2000-2018  Jo Odland
@@ -83,6 +84,9 @@
 ;;      `bm-highlight-style'. It is possible to have fringe-markers on
 ;;      left or right side.
 ;;
+;;    - Display the number of bookmarks in the current buffer in the
+;;      mode line, see `bm-modeline-info' and
+;;      `bm-modeline-display-total'.
 
 
 ;;; Known limitations:
@@ -136,6 +140,16 @@
 ;;
 ;;   (setq bm-marker 'bm-marker-right)
 ;;
+;;
+;;   Mode line:
+;;
+;;   Since there are number of different packages that helps with
+;;   configuring the mode line, it is hard to provide integrations.
+;;   Below is an example on how to add it to the standard Emacs mode
+;;   line:
+;;
+;;     (add-to-list 'mode-line-position '(:eval (bm-modeline-info)) t)
+
 
 
 
@@ -399,9 +413,36 @@ t, search in all open buffers."
   :type 'boolean
   :group 'bm)
 
+(defcustom bm-modeline-display-front-space " "
+  "* Specify the space in front of the bookmark count on the mode line."
+  :type 'boolean
+  :group 'bm)
+
+(defcustom bm-modeline-display-end-space nil
+  "* Specify the space after the bookmark count on the mode line."
+  :type 'string
+  :group 'bm)
+
+(defcustom bm-modeline-display-when-empty nil
+  "*Specify if the bm mode-line will be display is there are no
+  bookmarks. Used by the `bm-modeline-info'
+
+nil, do not display anything is there are no bookmarks.
+t, always display the total number of bookmarks."
+  :type 'boolean
+  :group 'bm)
+
+(defcustom bm-modeline-display-total nil
+  "*Specify the bm mode-line display format. Used by the `bm-modeline-info'.
+
+nil, display the number of bookmarks above and below the cursor.
+t, only display the total number of bookmarks."
+  :type 'boolean
+  :group 'bm)
+
 (defcustom temporary-bookmark-p nil
-  "when visit a bookmark using `bm-next' or `bm-previsour'  the bookmark
-will be auto removed if this option is not nil."
+  "When stopping on a bookmark using `bm-next' or `bm-previsour'
+the bookmark will be removed if this option is not nil."
   :type 'boolean
   :group 'bm)
 
@@ -643,6 +684,21 @@ EV is the mouse event."
   (save-excursion
     (mouse-set-point ev)
     (bm-toggle)))
+
+ 
+(defun bm-modeline-info nil
+  "Display information about the number of bookmarks in the
+current buffer. Format depends on `bm-modeline-display-total' and
+`bm-modeline-display-when-empty'"
+  (if (or (> (bm-count) 0) bm-modeline-display-when-empty)
+      (let ((bookmarks (bm-lists t 'bm-bookmark-is-visible)))
+        (concat
+         bm-modeline-display-front-space
+         (if bm-modeline-display-total
+             (format "bm(%s)" (+ (length (car bookmarks)) (length (cdr bookmarks))))
+           (format "bm(%s:%s)" (length (car bookmarks)) (length (cdr bookmarks))))
+         bm-modeline-display-end-space))
+    nil))
 
 
 (defun bm-count nil
