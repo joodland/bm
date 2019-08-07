@@ -1,15 +1,10 @@
-
 ;;; bm.el --- Visible bookmarks in buffer. -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2000-2018  Jo Odland
+;; Copyright (C) 2000-2019  Jo Odland
 
 ;; Author: Jo Odland <jo.odland(at)gmail.com>
 ;; Keywords: bookmark, highlight, faces, persistent
 ;; URL: https://github.com/joodland/bm
-
-;; Portions Copyright (C) 2002 by Ben Key
-;; Updated by Ben Key <bkey1(at)tampabay.rr.com> on 2002-12-05
-;; to add support for XEmacs
 
 
 ;; This file is *NOT* part of GNU Emacs.
@@ -91,18 +86,14 @@
 
 ;;; Known limitations:
 ;;
-;;   This package is developed and tested on GNU Emacs 23.x. It should
-;;   work on all GNU Emacs 21.x, GNU Emacs 22.x and also on XEmacs
-;;   21.x with some limitations.
+;;   This package is developed and tested on GNU Emacs 26.x. It should
+;;   also work on all GNU Emacs newer than version 21.x.
 ;;
 ;;   There are some incompatibilities with lazy-lock when using
 ;;   fill-paragraph. All bookmark below the paragraph being filled
 ;;   will be lost. This issue can be resolved using the
 ;;   `jit-lock-mode' introduced in GNU Emacs 21.1
 ;;
-;;   Bookmarks will be extended when inserting text (before, inside or
-;;   after) bookmark in XEmacs. This is due to the missing support for
-;;   overlay hooks i XEmacs.
 
 
 ;;; Installation:
@@ -235,7 +226,6 @@
 ;;
 ;;  - The use of overlays for bookmarks was inspired by highline.el by
 ;;    Vinicius Jose Latorre <vinicius(at)cpqd.com.br>.
-;;  - Thanks to Ben Key for XEmacs support.
 ;;  - Thanks to Peter Heslin for notifying me on the incompability
 ;;    with lazy-lock.
 ;;  - Thanks to Christoph Conrad for adding support for goto line
@@ -267,12 +257,9 @@
 (eval-and-compile
   (require 'cl-lib)
   (require 'cl-macs)
-  ;; avoid compile warning on unbound variable
-  (require 'info)
 
-  ;; xemacs needs overlay emulation package
-  (unless (fboundp 'overlay-lists)
-    (require 'overlay)))
+  ;; avoid compile warning on unbound variable
+  (require 'info))
 
 
 (defconst bm-bookmark-repository-version 2
@@ -651,12 +638,12 @@ when `bm-next' or `bm-previous' navigate to this bookmark."
           (overlay-put bookmark 'before-string (bm-get-fringe-marker)))
         (if (or bm-annotate-on-create annotation)
             (bm-bookmark-annotate bookmark annotation))
-        (unless (featurep 'xemacs)
-          ;; gnu emacs specific features
-          (overlay-put bookmark 'priority bm-priority)
-          (overlay-put bookmark 'modification-hooks '(bm-freeze))
-          (overlay-put bookmark 'insert-in-front-hooks '(bm-freeze-in-front))
-          (overlay-put bookmark 'insert-behind-hooks '(bm-freeze)))
+
+        (overlay-put bookmark 'priority bm-priority)
+        (overlay-put bookmark 'modification-hooks '(bm-freeze))
+        (overlay-put bookmark 'insert-in-front-hooks '(bm-freeze-in-front))
+        (overlay-put bookmark 'insert-behind-hooks '(bm-freeze))
+
         (setq bm-current bookmark)
         bookmark))))
 
@@ -809,7 +796,7 @@ If optional argument PREDICATE is provided, it is used as a
 selection criteria for filtering the lists."
   (if (null predicate)
     (setq predicate 'bm-bookmarkp))
-  
+
   (overlay-recenter (point))
   (cond ((equal 'forward direction)
          (cons nil (remq nil (mapcar predicate (cdr (overlay-lists))))))
@@ -823,11 +810,9 @@ selection criteria for filtering the lists."
   "overlays in current buffer"
   (let ((bookmarks (bm-lists)))
     (append
-     ;; xemacs has the list sorted after buffer position, while
-     ;; gnu emacs list is sorted relative to current position.
-     (if (featurep 'xemacs)
-         (car bookmarks)
-       (reverse (car bookmarks)))
+
+     ;; list is sorted relative to current position.
+     (reverse (car bookmarks))
      (cdr bookmarks))))
 
 (defun bm-overlay-all()
