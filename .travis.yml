@@ -1,17 +1,8 @@
-dist: trusty
+dist: xenial
 language: generic
 sudo: no
 env:
-  # - EVM_EMACS=emacs-24.1-travis
-  # - EVM_EMACS=emacs-24.2-travis
-  # - EVM_EMACS=emacs-24.3-travis
-  # - EVM_EMACS=emacs-24.4-travis
-  # - EVM_EMACS=emacs-24.5-travis
-  # - EVM_EMACS=emacs-25.1-travis
-  # - EVM_EMACS=emacs-25.2-travis
-  # - EVM_EMACS=emacs-25.3-travis
-  - EVM_EMACS=emacs-26.1-travis
-  # - EVM_EMACS=emacs-git-snapshot-travis
+  - EVM_EMACS=emacs-26.3-travis-linux-xenial
 before_install:
     - export PATH="/home/travis/.evm/bin:$PATH"
     - git clone https://github.com/rejeep/evm.git /home/travis/.evm
