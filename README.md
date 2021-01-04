@@ -2,7 +2,7 @@
 [![MELPA](http://stable.melpa.org/packages/bm-badge.svg)](http://melpa.org/#/bm)
 [![Travis](https://travis-ci.org/joodland/bm.svg?branch=master)](https://travis-ci.org/joodland/bm)
 
-Visible bookmarks in buffer for GNU Emacs 26.x
+Visible bookmarks in buffer for GNU Emacs 26.x, 27.x
 =====================
 
 This package provides visible, buffer local, bookmarks and the ability
@@ -153,6 +153,7 @@ Configuring bm.el with [use-package](https://github.com/jwiegley/use-package)
 Reviews and comments:
 --------------------
 
+* [Lockdown Beam: bm.el] (https://www.manueluberti.eu//emacs/2020/03/19/lockdown-beam-bm/)
 * [A Visual Bookmarks package for Emacs](http://emacsworld.blogspot.com/2008/09/visual-bookmarks-package-for-emacs.html)
 * [Bookmark Mania](http://www.emacsblog.org/2007/03/22/bookmark-mania/)
 * [EmacsWiki: VisibleBookmarks](http://www.emacswiki.org/cgi-bin/wiki/VisibleBookmarks)
