@@ -153,7 +153,7 @@ Configuring bm.el with [use-package](https://github.com/jwiegley/use-package)
 Reviews and comments:
 --------------------
 
-* [Lockdown Beam: bm.el] (https://www.manueluberti.eu//emacs/2020/03/19/lockdown-beam-bm/)
+* [Lockdown Beam: bm.el](https://www.manueluberti.eu//emacs/2020/03/19/lockdown-beam-bm/)
 * [A Visual Bookmarks package for Emacs](http://emacsworld.blogspot.com/2008/09/visual-bookmarks-package-for-emacs.html)
 * [Bookmark Mania](http://www.emacsblog.org/2007/03/22/bookmark-mania/)
 * [EmacsWiki: VisibleBookmarks](http://www.emacswiki.org/cgi-bin/wiki/VisibleBookmarks)
