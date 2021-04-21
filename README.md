@@ -86,6 +86,11 @@ or if you want use this feature in your library:
 
     (bm-bookmark-add nil nil t)
 
+If you need org-mode to expand the region containing a bookmark, add the following:
+
+    (add-hook 'bookmark-after-jump-hook 'org-bookmark-jump-unhide)
+
+
 
 Configuring bm.el with use-package:
 ---------------------------------

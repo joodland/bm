@@ -539,6 +539,11 @@ before bm is loaded.")
 
 (defvar bm-current nil)
 
+(defvar bm-after-goto-hook nil
+  "Hook run after jumping to a bookmark in `bm-goto'. This can be
+  useful to expand a collapsed section containing a bookmark.")
+
+
 ;; avoid errors on emacs running in a terminal
 (when (fboundp 'define-fringe-bitmap)
   (define-fringe-bitmap 'bm-marker-left   [#x00 #x00 #xFC #xFE #x0F #xFE #xFC #x00])
@@ -1105,6 +1110,7 @@ EV is the mouse event."
                         (overlay-start bookmark)
                         (marker-position (overlay-get bookmark 'position))))
           (goto-char (overlay-start bookmark)))
+        (run-hooks 'bm-after-goto-hook)
         (setq bm-wrapped nil)           ; turn off wrapped state
         (if bm-recenter
             (recenter))
