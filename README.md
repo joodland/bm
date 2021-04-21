@@ -88,7 +88,7 @@ or if you want use this feature in your library:
 
 If you need org-mode to expand the region containing a bookmark, add the following:
 
-    (add-hook 'bookmark-after-jump-hook 'org-bookmark-jump-unhide)
+    (add-hook 'bm-after-goto-hook 'org-bookmark-jump-unhide)
 
 
 
