@@ -36,6 +36,7 @@
 ;;   to jump forward and backward to the next bookmark.
 ;;
 ;;   Features:
+;;
 ;;    - Toggle bookmarks with `bm-toggle' and navigate forward and
 ;;      backward in buffer with `bm-next' and `bm-previous'.
 ;;
@@ -74,6 +75,9 @@
 ;;      the message area when navigating to a bookmark. Set the
 ;;      variable `bm-annotate-on-create' to t to be prompted for an
 ;;      annotation when bookmark is created.
+;;
+;;      - Annotation suggestions can be configured based upon a buffer's
+;;        `major-mode'. See variable `bm-suggest-annotation-alist'.
 ;;
 ;;    - Different bookmark styles, fringe-only, line-only or both, see
 ;;      `bm-highlight-style'. It is possible to have fringe-markers on
@@ -508,6 +512,22 @@ keeps `bm' of ever outputting anything."
                  (const :tag "Info" 2))
   :group 'bm)
 
+(defcustom bm-suggest-annotation-alist
+  '((emacs-lisp-mode . bm--suggest-lisp)
+    (org-mode        . bm--suggest-org))
+  "What to suggest for a bookmark's annotation.
+An ALIST whose KEYs are `major-mode' symbols and VALUEs are
+function symbols. The functions should accept a single optional
+OVERLAY argument of type `bm' and should return a STRING, empty
+if no suggestion. The functions can expect `current-buffer' to be
+that of OVERLAY and that function `save-mark-and-excursion' has
+already been performed."
+  :type '(repeat (cons (symbol   :must-match t :tag "major-mode")
+                       (function :must-match t :tag "function to use")))
+  :group 'bm
+  ;; TODO: validate that the CAR is a major-mode symbol
+  )
+
 (defvar bm-restore-repository-on-load nil
   "Specify if repository should be restored when loading bm.
 
@@ -555,22 +575,55 @@ before bm is loaded.")
   (interactive)
   (customize-group 'bm))
 
+(defun bm--suggest-lisp (&optional bm)
+  "Suggestion function for lisp mode bookmark annotations."
+    (when bm
+      (goto-char (overlay-start bm)))
+    (end-of-line)
+    (cond
+     ((re-search-backward "^(\\(def[^ ]+ [^ ]+\\)" nil t)
+       (buffer-substring (match-beginning 1) (match-end 1)))
+     ((re-search-backward "^;;;\s+\\([^\s].*$\\)" nil t)
+       (buffer-substring (match-beginning 1) (match-end 1)))
+     (t "")))
+
+(defun bm--suggest-org (&optional bm)
+  "Suggestion function for org mode bookmark annotations."
+    (when bm
+      (goto-char (overlay-start bm)))
+    (end-of-line)
+    (if (re-search-backward org-heading-regexp nil t)
+      (buffer-substring (match-beginning 0) (match-end 0))
+     ""))
+
+(defun bm--suggest-annotation (&optional bm)
+  "Returns a suggested annotation for POINT or for bookmark BM.
+See variable `bm-suggest-annotation-alist'."
+  (let (elem)
+    (with-current-buffer (if bm (overlay-buffer bm) (current-buffer))
+      (when (and (setq elem (assq major-mode bm-suggest-annotation-alist))
+                 (functionp (cdr elem)))
+        (save-mark-and-excursion
+          (funcall (cdr elem) bm))))))
 
 (defun bm-bookmark-annotate (&optional bookmark annotation)
   "Annotate bookmark at point or the BOOKMARK specified as parameter.
 
 If ANNOTATION is provided use this, and not prompt for input."
   (interactive)
-  (if (null bookmark)
-      (setq bookmark (bm-bookmark-at (point))))
-
-  (if (bm-bookmarkp bookmark)
-      (progn
-        (if (null annotation)
-            (setq annotation (read-from-minibuffer "Annotation: " nil nil nil 'bm-annotation-history)))
-        (overlay-put bookmark 'annotation annotation))
-    (if (and (called-interactively-p 'interactive) (> bm-verbosity-level 0))
-        (message "No bookmark at point"))))
+  (cond
+   ((bm-bookmarkp (or bookmark
+                      (setq bookmark (bm-bookmark-at (point)))))
+     (overlay-put bookmark 'annotation
+       (or (stringp annotation)
+           (read-from-minibuffer "Annotation: "
+             (setq annotation (or (overlay-get bookmark 'annotation)
+                                  (bm--suggest-annotation bookmark)))
+             nil nil 'bm-annotation-history annotation)
+           annotation)))
+  ((and ; not (bm-bookmarkp bookmark)
+        (called-interactively-p 'interactive) (> bm-verbosity-level 0))
+    (user-error "No bookmark at point"))))
 
 (defun bm-bookmark-show-annotation (&optional bookmark)
   "Show annotation for bookmark.
@@ -624,7 +677,7 @@ Either the bookmark at point or the BOOKMARK specified as parameter."
 If ANNOTATION is provided use this, and do not prompt for input.
 Only used if `bm-annotate-on-create' is true.
 
-TIME is useful when `bm-in-lifo-order' is not nil. 
+TIME is useful when `bm-in-lifo-order' is not nil.
 
 if TEMPORARY-BOOKMARK not nil,the bookmark will be removed
 when `bm-next' or `bm-previous' navigate to this bookmark."
@@ -633,8 +686,16 @@ when `bm-next' or `bm-previous' navigate to this bookmark."
         (progn (setq bm-current bookmark)
                (overlay-put bookmark 'position (point-marker))
                (overlay-put bookmark 'time (or time (float-time))))
-      (let ((bookmark (make-overlay (bm-start-position) (bm-end-position)))
-            (hlface (if bm-buffer-persistence bm-persistent-face bm-face)))
+      (let ((hlface (if bm-buffer-persistence bm-persistent-face bm-face))
+            bookmark)
+        (when (and (not annotation) bm-annotate-on-create)
+          (setq annotation
+            (read-from-minibuffer "Annotation: "
+              (setq annotation (bm--suggest-annotation))
+              nil nil 'bm-annotation-history annotation)))
+        (setq bookmark (make-overlay (bm-start-position) (bm-end-position)))
+        (when annotation
+          (overlay-put bookmark 'annotation annotation))
         ;; set market
         (overlay-put bookmark 'time (or time (float-time)))
         (overlay-put bookmark 'temporary-bookmark
@@ -647,25 +708,22 @@ when `bm-next' or `bm-previous' navigate to this bookmark."
         (overlay-put bookmark 'category 'bm)
         (when (bm-highlight-fringe)
           (overlay-put bookmark 'before-string (bm-get-fringe-marker)))
-        (if (or bm-annotate-on-create annotation)
-            (bm-bookmark-annotate bookmark annotation))
-
         (overlay-put bookmark 'priority bm-priority)
         (overlay-put bookmark 'modification-hooks '(bm-freeze))
         (overlay-put bookmark 'insert-in-front-hooks '(bm-freeze-in-front))
         (overlay-put bookmark 'insert-behind-hooks '(bm-freeze))
-
         (setq bm-current bookmark)
+        (message "Bookmark created.")
         bookmark))))
 
 
 (defun bm-bookmark-remove (&optional bookmark)
   "Remove bookmark at point or the BOOKMARK specified as parameter."
-  (if (null bookmark)
-      (setq bookmark (bm-bookmark-at (point))))
-
-  (if (bm-bookmarkp bookmark)
-      (delete-overlay bookmark)))
+  (unless bookmark
+    (setq bookmark (bm-bookmark-at (point))))
+  (when (bm-bookmarkp bookmark)
+    (delete-overlay bookmark)
+    (message "Bookmark removed.")))
 
 
 ;;;###autoload
@@ -687,7 +745,7 @@ EV is the mouse event."
     (mouse-set-point ev)
     (bm-toggle)))
 
- 
+
 (defun bm-modeline-info nil
   "Display information about the number of bookmarks in the
 current buffer. Format depends on `bm-modeline-display-total' and
