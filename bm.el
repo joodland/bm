@@ -595,6 +595,7 @@ in the minibuffer for quick navigation."
          "Jump to bookmark: "
          (mapcar 'car candidates) nil t)))
    (when (setq decision (assoc decision candidates))
+     (pop-to-buffer (overlay-buffer (cadr decision)))
      (goto-char (overlay-start (cadr decision))))))
 
 (defun bm-bookmark-annotate (&optional bookmark annotation)
