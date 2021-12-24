@@ -109,8 +109,9 @@ Configuring bm.el with [use-package](https://github.com/jwiegley/use-package)
              ;; Allow cross-buffer 'next'
              (setq bm-cycle-all-buffers t)
 
-             ;; where to store persistant files
-             (setq bm-repository-file "~/.emacs.d/bm-repository")
+             ;; Where to store persistent files.
+             (setq bm-repository-file (concat user-emacs-directory "bm-repository"))
+
 
              ;; save bookmarks
              (setq-default bm-buffer-persistence t)
