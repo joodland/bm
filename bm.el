@@ -1544,7 +1544,11 @@ BUFFER-DATA is the content of `bm-repository-file'."
                           (let ((bookmarks (bm-lists)))
                             (mapcar
                              #'(lambda (bm)
-                                 (let ((position (marker-position (overlay-get bm 'position))))
+                                 (let ((position (max
+                                                  ;; sometimes marker-position is before start of overlay
+                                                  ;; marker is not updated when overlay hooks are called.
+                                                  (overlay-start bm)
+                                                  (marker-position (overlay-get bm 'position)))))
                                    (list
                                     (cons 'position position)
                                     (cons 'time (overlay-get bm 'time))
