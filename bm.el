@@ -1509,8 +1509,8 @@ BUFFER-DATA is the content of `bm-repository-file'."
         (let ((pos (if buffer-size-match
                        (cdr (assoc 'position (car bookmarks)))
                      (bm-get-position-from-context (car bookmarks))))
-              (time (assoc 'time buffer-data))
-              (temporary-bookmark (assoc 'temporary-bookmark buffer-data))
+              (time (cdr (assoc 'time (car bookmarks))))
+              (temporary-bookmark (cdr (assoc 'temporary-bookmark (car bookmarks))))
               (annotation (cdr (assoc 'annotation (car bookmarks)))))
 
           ;; create bookmark if is inside buffer
