@@ -39,6 +39,31 @@ This is the last line.")
     ))
 
 
+(ert-deftest bm-bookmark--bm-list ()
+  "Simple test of `bm-list'"
+  (with-temp-buffer
+    (insert text)
+
+    (bm-bookmark-line 1)
+    (bm-bookmark-line 5)
+
+    (should (= (bm-count) 2))
+
+    (goto-char (point-min))
+    (should (= 0 (length (car (bm-lists)))))
+    (should (= 2 (length (cdr (bm-lists)))))
+
+    (goto-line 3)
+    (should (= 1 (length (car (bm-lists)))))
+    (should (= 1 (length (cdr (bm-lists)))))
+
+    (goto-char (point-max))
+    (should (= 2 (length (car (bm-lists)))))
+    (should (= 0 (length (cdr (bm-lists)))))
+    ))
+
+
+
 (ert-deftest bm-bookmark--narrow-to-region--1 ()
   "Test behaviour in narrowed buffers."
   (with-temp-buffer

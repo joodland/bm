@@ -711,12 +711,12 @@ current buffer. Format depends on `bm-modeline-display-total' and
 
 (defun bm-start-position nil
   "Return the bookmark start position."
-  (point-at-bol))
+  (pos-bol))
 
 
 (defun bm-end-position nil
   "Return the bookmark end position."
-  (min (point-max) (+ 1 (point-at-eol))))
+  (min (point-max) (+ 1 (pos-eol))))
 
 
 (defun bm-freeze-in-front (overlay after begin end &optional len)
@@ -808,14 +808,16 @@ selection criteria for filtering the lists."
   (if (null predicate)
     (setq predicate 'bm-bookmarkp))
 
-  (overlay-recenter (point))
+  (when (< emacs-major-version 29)
+    (overlay-recenter (point)))         ; changed behaviour from version 29.0, bug #60058
+
   (cond ((equal 'forward direction)
-         (cons nil (remq nil (mapcar predicate (cdr (overlay-lists))))))
+         (cons nil (remq nil (mapcar predicate (overlays-in (point) (point-max))))))
         ((equal 'backward direction)
-         (cons (remq nil (mapcar predicate (car (overlay-lists)))) nil))
+         (cons (remq nil (mapcar predicate (overlays-in (point-min) (point)))) nil))
         (t
-         (cons (remq nil (mapcar predicate (car (overlay-lists))))
-               (remq nil (mapcar predicate (cdr (overlay-lists))))))))
+         (cons (remq nil (mapcar predicate (overlays-in (point-min) (point))))
+               (remq nil (mapcar predicate (overlays-in (point) (point-max))))))))
 
 (defun bm-overlay-in-buffer()
   "overlays in current buffer"
@@ -1315,7 +1317,8 @@ users by the likes of `bm-show' and `bm-show-all'."
 
 
 (defun bm-show-click-mouse (event &optional close)
-  "Goto the bookmark under the mouse, close the `bm-show' buffer if optional parameter is present."
+  "Goto the bookmark under the mouse, close the `bm-show' buffer if
+optional parameter is present."
   (let ((window (posn-window (event-end event)))
         (pos (posn-point (event-end event))))
 
