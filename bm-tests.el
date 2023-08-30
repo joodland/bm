@@ -63,6 +63,44 @@ This is the last line.")
     ))
 
 
+(ert-deftest bm-bookmark--bm-next ()
+  "Simple test of `bm-list'"
+  (with-temp-buffer
+    (insert text)
+
+    (bm-bookmark-line 2)
+    (bm-bookmark-line 5)
+
+    (should (= (bm-count) 2))
+
+    (goto-char (point-min))
+    (bm-next)
+    (should (= 2 (line-number-at-pos)))
+
+    (bm-next)
+    (should (= 5 (line-number-at-pos)))
+    ))
+
+
+(ert-deftest bm-bookmark--bm-previous ()
+  "Simple test of `bm-list'"
+  (with-temp-buffer
+    (insert text)
+
+    (bm-bookmark-line 2)
+    (bm-bookmark-line 5)
+
+    (should (= (bm-count) 2))
+
+    (goto-char (point-max))
+    (bm-previous)
+    (should (= 5 (line-number-at-pos)))
+
+    (bm-previous)
+    (should (= 2 (line-number-at-pos)))
+    ))
+
+
 
 (ert-deftest bm-bookmark--narrow-to-region--1 ()
   "Test behaviour in narrowed buffers."
