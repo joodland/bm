@@ -1,8 +1,9 @@
 [![MELPA](http://melpa.org/packages/bm-badge.svg)](http://melpa.org/#/bm)
 [![MELPA](http://stable.melpa.org/packages/bm-badge.svg)](http://melpa.org/#/bm)
-[![Travis](https://travis-ci.org/joodland/bm.svg?branch=master)](https://travis-ci.org/joodland/bm)
+[![CI](https://github.com/joodland/bm/actions/workflows/test.yml/badge.svg)](https://github.com/joodland/bm/actions/workflows/test.yml)
 
-Visible bookmarks in buffer for GNU Emacs 26.x, 27.x
+
+Visible bookmarks in buffer for GNU Emacs 26.x, 27.x, 28.x, 29.x
 =====================
 
 This package provides visible, buffer local, bookmarks and the ability
