@@ -475,7 +475,7 @@ nil, the repository will not be persistent."
 
 
 (defcustom bm-repository-size 100
-  "*Size of persistent repository. If nil then there if no limit."
+  "*Size of persistent repository. If nil then there is no limit."
   :type 'integer
   :group 'bm)
 
@@ -1645,6 +1645,7 @@ BUFFER-DATA is the content of `bm-repository-file'."
 
 (defun bm-repository-save (&optional file)
   "Save the repository to the FILE specified or to `bm-repository-file'."
+  (interactive)
   (unless file
     (setq file bm-repository-file))
   (when (> bm-verbosity-level 1)
