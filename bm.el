@@ -1523,8 +1523,8 @@ BUFFER-DATA is the content of `bm-repository-file'."
         (let ((pos (if buffer-size-match
                        (cdr (assoc 'position (car bookmarks)))
                      (bm-get-position-from-context (car bookmarks))))
-              (time (assoc 'time buffer-data))
-              (temporary-bookmark (assoc 'temporary-bookmark buffer-data))
+              (time (cdr (assoc 'time (car bookmarks))))
+              (temporary-bookmark (cdr (assoc 'temporary-bookmark (car bookmarks))))
               (annotation (cdr (assoc 'annotation (car bookmarks)))))
 
           ;; create bookmark if is inside buffer
@@ -1558,7 +1558,11 @@ BUFFER-DATA is the content of `bm-repository-file'."
                           (let ((bookmarks (bm-lists)))
                             (mapcar
                              #'(lambda (bm)
-                                 (let ((position (marker-position (overlay-get bm 'position))))
+                                 (let ((position (max
+                                                  ;; sometimes marker-position is before start of overlay
+                                                  ;; marker is not updated when overlay hooks are called.
+                                                  (overlay-start bm)
+                                                  (marker-position (overlay-get bm 'position)))))
                                    (list
                                     (cons 'position position)
                                     (cons 'time (overlay-get bm 'time))
