@@ -1,6 +1,6 @@
 ;;; bm.el --- Visible bookmarks in buffer. -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2000-2019  Jo Odland
+;; Copyright (C) 2000-2023  Jo Odland
 
 ;; Author: Jo Odland <jo.odland(at)gmail.com>
 ;; Keywords: bookmark, highlight, faces, persistent

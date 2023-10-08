@@ -196,6 +196,50 @@ This is the last line.")
     ))
 
 
+(ert-deftest bm-bookmark--save-and-restore-data ()
+  "Test saving and restoring annotations and time."
+  (with-temp-buffer
+    (make-variable-buffer-local 'bm-repository-file)
+    (setq bm-repository-file (make-temp-file "bm-repository-"))
+
+    (insert text)
+
+    (bm-toggle-buffer-persistence)
+
+    ;;(bm-bookmark-line 6)
+    (goto-line 6)
+    (bm-bookmark-add "XXX")
+    (let* ((b (bm-bookmark-at (point)))
+           (timestamp (overlay-get b 'time)))
+      (should (bm-bookmarkp b))
+
+      (bm-buffer-save-all)
+      (bm-repository-save)
+      (should (= (bm-count) 1))
+
+      (bm-remove-all-current-buffer)
+      (should (= (bm-count) 0))
+
+      (bm-repository-load)
+      (bm-buffer-restore-all)
+      (should (= (bm-count) 1))
+
+      (goto-char (point-min))
+
+      (bm-next)
+      (should (= (line-number-at-pos) 6))
+
+
+      (setq b (bm-bookmark-at (point)))
+
+      (should (string= "XXX" (overlay-get b 'annotation)))
+
+      ;; only look at the most significant part of the timestamp
+      (should (= (truncate timestamp) (truncate (overlay-get b 'time))))
+      )
+    ))
+
+
 (ert-deftest bm-bookmark--bm-first ()
   "Test that `bm-goto-position' is preserved when wrapping to bookmark on the first line."
   (with-temp-buffer
