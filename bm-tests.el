@@ -5,6 +5,7 @@
 ;; > emacs -batch -l ert -l bm-tests.el -f ert-run-tests-batch-and-exit
 ;;
 ;; to run from inside of Emacs
+;; M-x eval-buffer
 ;; M-x ert-run-tests-interactively
 
 (defvar text "This is a multi line text.
