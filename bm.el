@@ -1,6 +1,6 @@
 ;;; bm.el --- Visible bookmarks in buffer. -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2000-2023  Jo Odland
+;; Copyright (C) 2000-2025  Jo Odland
 
 ;; Author: Jo Odland <jo.odland(at)gmail.com>
 ;; Keywords: bookmark, highlight, faces, persistent
@@ -185,7 +185,7 @@
 ;;   (require 'bm)
 ;;
 ;;   ;; Loading the repository from file when on start up.
-;;   (add-hook' after-init-hook 'bm-repository-load)
+;;   (add-hook 'after-init-hook 'bm-repository-load)
 ;;
 ;;   ;; Restoring bookmarks when on file find.
 ;;   (add-hook 'find-file-hooks 'bm-buffer-restore)
@@ -194,7 +194,7 @@
 ;;   (add-hook 'kill-buffer-hook 'bm-buffer-save)
 ;;
 ;;   ;; Saving the repository to file when on exit.
-;;   ;; kill-buffer-hook is not called when Emacs is killed, so we
+;;   ;; `kill-buffer-hook' is not called when Emacs is killed, so we
 ;;   ;; must save all bookmarks first.
 ;;   (add-hook 'kill-emacs-hook '(lambda nil
 ;;                                   (bm-buffer-save-all)
@@ -300,27 +300,27 @@ over overlays with lower priority.  *Don't* use a negative number."
 
 
 (defface bm-face
-  '((((class grayscale)
-      (background light)) (:background "DimGray"))
-    (((class grayscale)
-      (background dark))  (:background "LightGray"))
-    (((class color)
-      (background light)) (:foreground "White" :background "DarkOrange1"))
-    (((class color)
-      (background dark))  (:foreground "Black" :background "DarkOrange1")))
+  '((((class grayscale) (background light))
+     (:background "DimGray" :extend t))
+    (((class grayscale) (background dark))
+     (:background "LightGray" :extend t))
+    (((class color) (background light))
+     (:foreground "White" :background "DarkOrange1" :extend t))
+    (((class color) (background dark))
+     (:foreground "Black" :background "DarkOrange1" :extend t)))
   "Face used to highlight current line."
   :group 'bm)
 
 
 (defface bm-persistent-face
-  '((((class grayscale)
-      (background light)) (:background "DimGray"))
-    (((class grayscale)
-      (background dark))  (:background "LightGray"))
-    (((class color)
-      (background light)) (:foreground "White" :background "DarkBlue"))
-    (((class color)
-      (background dark))  (:foreground "White" :background "DarkBlue")))
+  '((((class grayscale) (background light))
+     (:background "DimGray" :extend t))
+    (((class grayscale) (background dark))
+     (:background "LightGray" :extend t))
+    (((class color) (background light))
+     (:foreground "White" :background "DarkBlue" :extend t))
+    (((class color) (background dark))
+     (:foreground "White" :background "DarkBlue" :extend t)))
   "Face used to highlight current line if bookmark is persistent."
   :group 'bm)
 
@@ -336,26 +336,26 @@ over overlays with lower priority.  *Don't* use a negative number."
   :group 'bm)
 
 (defface bm-fringe-face
-  '((((class grayscale)
-      (background light)) (:background "DimGray"))
-    (((class grayscale)
-      (background dark))  (:background "LightGray"))
-    (((class color)
-      (background light)) (:foreground "White" :background "DarkOrange1"))
-    (((class color)
-      (background dark))  (:foreground "Black" :background "DarkOrange1")))
+  '((((class grayscale) (background light))
+     (:background "DimGray"))
+    (((class grayscale) (background dark))
+     (:background "LightGray"))
+    (((class color) (background light))
+     (:foreground "White" :background "DarkOrange1"))
+    (((class color) (background dark))
+     (:foreground "Black" :background "DarkOrange1")))
   "Face used to highlight bookmarks in the fringe."
   :group 'bm)
 
 (defface bm-fringe-persistent-face
-  '((((class grayscale)
-      (background light)) (:background "DimGray"))
-    (((class grayscale)
-      (background dark))  (:background "LightGray"))
-    (((class color)
-      (background light)) (:foreground "White" :background "DarkBlue"))
-    (((class color)
-      (background dark))  (:foreground "White" :background "DarkBlue")))
+  '((((class grayscale) (background light))
+     (:background "DimGray"))
+    (((class grayscale) (background dark))
+     (:background "LightGray"))
+    (((class color) (background light))
+     (:foreground "White" :background "DarkBlue"))
+    (((class color) (background dark))
+     (:foreground "White" :background "DarkBlue")))
   "Face used to highlight bookmarks in the fringe if bookmark is persistent."
   :group 'bm)
 
@@ -474,7 +474,7 @@ nil, the repository will not be persistent."
   :group 'bm)
 
 
-(defcustom bm-repository-size 100
+(defcustom bm-repository-size 1000
   "*Size of persistent repository. If nil then there is no limit."
   :type 'integer
   :group 'bm)
@@ -537,7 +537,8 @@ before bm is loaded.")
 (defvar bm-marker 'bm-marker-left
   "Fringe marker side. Left of right.")
 
-(defvar bm-current nil)
+(defvar bm-current nil
+  "Current bookmark. Used to manage LIFO order when `bm-in-lifo-order' is not nil")
 
 (defvar bm-after-goto-hook nil
   "Hook run after jumping to a bookmark in `bm-goto'. This can be
@@ -633,8 +634,7 @@ when `bm-next' or `bm-previous' navigate to this bookmark."
         (progn (setq bm-current bookmark)
                (overlay-put bookmark 'position (point-marker))
                (overlay-put bookmark 'time (or time (float-time))))
-      (let ((bookmark (make-overlay (bm-start-position) (bm-end-position)))
-            (hlface (if bm-buffer-persistence bm-persistent-face bm-face)))
+      (let ((bookmark (make-overlay (bm-start-position) (bm-end-position))))
         ;; set market
         (overlay-put bookmark 'time (or time (float-time)))
         (overlay-put bookmark 'temporary-bookmark
@@ -642,7 +642,8 @@ when `bm-next' or `bm-previous' navigate to this bookmark."
         (overlay-put bookmark 'position (point-marker))
         ;; select bookmark face
         (when (bm-highlight-line)
-          (overlay-put bookmark 'face hlface))
+          (overlay-put bookmark 'face
+                       (if bm-buffer-persistence bm-persistent-face bm-face)))
         (overlay-put bookmark 'evaporate t)
         (overlay-put bookmark 'category 'bm)
         (when (bm-highlight-fringe)
