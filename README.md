@@ -3,7 +3,7 @@
 [![CI](https://github.com/joodland/bm/actions/workflows/test.yml/badge.svg)](https://github.com/joodland/bm/actions/workflows/test.yml)
 
 
-Visible bookmarks in buffer for GNU Emacs 26.x, 27.x, 28.x, 29.x
+Visible bookmarks in buffer for GNU Emacs 28.x, 29.x, 30.x
 =====================
 
 This package provides visible, buffer local, bookmarks and the ability
@@ -40,7 +40,7 @@ Installation:
 -------------
 
 To use bm.el, put it in your load-path and add the following to your .emacs
-```emacs-lisp    
+```emacs-lisp
 (require 'bm)
 ```
 or
@@ -70,6 +70,7 @@ Click on fringe to toggle bookmarks, and use mouse wheel to move between them.
 ```
 If you would like the markers on the right fringe instead of the left, add the following line:
 ```emacs-lisp
+(setq bm-highlight-style 'bm-highlight-line-and-fringe)
 (setq bm-marker 'bm-marker-right)
 ```
 If you would like to cycle bookmark in LIFO order, add the following line:
