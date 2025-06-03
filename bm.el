@@ -545,10 +545,15 @@ before bm is loaded.")
   useful to expand a collapsed section containing a bookmark.")
 
 
-;; avoid errors on emacs running in a terminal
+;; avoid errors if emacs is running in a terminal
 (when (fboundp 'define-fringe-bitmap)
-  (define-fringe-bitmap 'bm-marker-left   [#x00 #x00 #xFC #xFE #x0F #xFE #xFC #x00])
-  (define-fringe-bitmap 'bm-marker-right  [#x00 #x00 #x3F #x7F #xF0 #x7F #x3F #x00]))
+  (define-fringe-bitmap 'bm-marker-left
+    [#b1111111 #b1111111 #b1111111 #b1111111 #b1111111 #b1111111
+     #b1111111 #b1111111 #b1111111 #b1110111 #b1100011 #b1000001])
+
+  (define-fringe-bitmap 'bm-marker-right
+    [#b1111111 #b1111111 #b1111111 #b1111111 #b1111111 #b1111111
+     #b1111111 #b1111111 #b1111111 #b1110111 #b1100011 #b1000001]))
 
 
 (defun bm-customize nil
@@ -609,15 +614,10 @@ Either the bookmark at point or the BOOKMARK specified as parameter."
 
 (defun bm-get-fringe-marker nil
   "Get the fringde marker string."
-  (let ((marker-string "*fringe-dummy*"))
-    (put-text-property 0 (length marker-string) 'display
-                       (list (if (eq bm-marker 'bm-marker-left)
-                                 'left-fringe
-                               'right-fringe)
-                             bm-marker (bm-get-highlight-face-fringde))
-                       marker-string)
-    marker-string))
-
+  (propertize " " 'display (list (if (eq bm-marker 'bm-marker-left)
+                                     'left-fringe
+                                   'right-fringe)
+                                 bm-marker (bm-get-highlight-face-fringde))))
 
 (defun bm-bookmark-add (&optional annotation time temporary-bookmark)
   "Add bookmark at current line.
@@ -688,7 +688,7 @@ EV is the mouse event."
     (mouse-set-point ev)
     (bm-toggle)))
 
- 
+
 (defun bm-modeline-info nil
   "Display information about the number of bookmarks in the
 current buffer. Format depends on `bm-modeline-display-total' and
