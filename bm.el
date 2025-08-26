@@ -359,6 +359,11 @@ over overlays with lower priority.  *Don't* use a negative number."
   "Face used to highlight bookmarks in the fringe if bookmark is persistent."
   :group 'bm)
 
+(defface bm-file-name-face '((t :foreground "yellow"))
+  "File name's face for display in function `bm-jump'.")
+
+(defface bm-line-num-face  '((t :foreground "green"))
+  "Line number's face for display in function `bm-jump'.")
 
 (defcustom bm-annotate-on-create nil
   "*Specify if bookmarks must be annotated when created.
@@ -561,6 +566,43 @@ before bm is loaded.")
   (interactive)
   (customize-group 'bm))
 
+(defun bm-jump ()
+  "Jump directly to any bookmark.
+Presents the bookmark list in the form of completion candidates
+in the minibuffer for quick navigation."
+ (interactive)
+ (let* ((minibuffer-history '(""))
+        (bookmarks (bm-overlays-lifo-order 'all))
+        (file-line-width (bm-find-file-line-max-width bookmarks 'all))
+        (format-string (format "%%-%ds %%-%ds" file-line-width bm-annotation-width))
+        (elements
+          (mapcar
+            (lambda (bm)
+              (with-current-buffer (overlay-buffer bm)
+                 (let ((annot (overlay-get bm 'annotation))
+                       (line-num (number-to-string
+                                   (+ 1 (count-lines (point-min) (overlay-start bm))))))
+                   (list (format "%s:%s"
+                           (propertize (buffer-name) 'face 'bm-file-name-face)
+                           (propertize line-num      'face 'bm-line-num-face))
+                         (or annot "")
+                         bm))))
+            bookmarks))
+        (candidates
+          (mapcar (lambda (elem)
+                    (list (format format-string (nth 0 elem) (nth 1 elem))
+                          (nth 2 elem)))
+                  elements))
+        decision)
+   (while (or (not decision)
+              (zerop (length decision)))
+     (setq decision
+       (completing-read
+         "Jump to bookmark: "
+         (mapcar 'car candidates) nil t)))
+   (when (setq decision (assoc decision candidates))
+     (pop-to-buffer (overlay-buffer (cadr decision)))
+     (goto-char (overlay-start (cadr decision))))))
 
 (defun bm-bookmark-annotate (&optional bookmark annotation)
   "Annotate bookmark at point or the BOOKMARK specified as parameter.
@@ -625,7 +667,7 @@ Either the bookmark at point or the BOOKMARK specified as parameter."
 If ANNOTATION is provided use this, and do not prompt for input.
 Only used if `bm-annotate-on-create' is true.
 
-TIME is useful when `bm-in-lifo-order' is not nil. 
+TIME is useful when `bm-in-lifo-order' is not nil.
 
 if TEMPORARY-BOOKMARK not nil,the bookmark will be removed
 when `bm-next' or `bm-previous' navigate to this bookmark."
