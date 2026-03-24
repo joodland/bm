@@ -410,3 +410,193 @@ line4
 
     (should (string= (bm-modeline-info) " bm(1:0)"))
     ))
+
+
+(ert-deftest bm-bookmark--bm-toggle ()
+  "Test that `bm-toggle' adds and removes a bookmark at point."
+  (with-temp-buffer
+    (insert text)
+    (goto-line 3)
+    (bm-toggle)
+    (should (= (bm-count) 1))
+    (should (bm-bookmarkp (bm-bookmark-at (point))))
+    (bm-toggle)
+    (should (= (bm-count) 0))
+    (should (not (bm-bookmarkp (bm-bookmark-at (point)))))
+    ))
+
+
+(ert-deftest bm-bookmark--bm-equal ()
+  "Test that `bm-equal' compares bookmarks by position."
+  (with-temp-buffer
+    (insert text)
+    (goto-line 3)
+    (bm-bookmark-add)
+    (let ((bm1 (bm-bookmark-at (point))))
+      (should (bm-equal bm1 bm1))
+      (goto-line 5)
+      (bm-bookmark-add)
+      (let ((bm2 (bm-bookmark-at (point))))
+        (should (not (bm-equal bm1 bm2)))
+        (should (not (bm-equal nil bm2)))
+        (should (not (bm-equal bm1 nil)))
+        ))))
+
+
+(ert-deftest bm-bookmark--bm-count-zero ()
+  "Test that `bm-count' returns 0 in a buffer with no bookmarks."
+  (with-temp-buffer
+    (insert text)
+    (should (= (bm-count) 0))
+    ))
+
+
+(ert-deftest bm-bookmark--remove-all-current-buffer ()
+  "Test that `bm-remove-all-current-buffer' removes every bookmark."
+  (with-temp-buffer
+    (insert text)
+    (bm-bookmark-line 1)
+    (bm-bookmark-line 3)
+    (bm-bookmark-line 5)
+    (should (= (bm-count) 3))
+    (bm-remove-all-current-buffer)
+    (should (= (bm-count) 0))
+    ))
+
+
+(ert-deftest bm-bookmark--annotate ()
+  "Test that `bm-bookmark-annotate' stores an annotation on a bookmark."
+  (with-temp-buffer
+    (insert text)
+    (goto-line 3)
+    (bm-bookmark-add)
+    (let ((bm (bm-bookmark-at (point))))
+      (should (bm-bookmarkp bm))
+      (should (null (overlay-get bm 'annotation)))
+      (bm-bookmark-annotate bm "my note")
+      (should (string= "my note" (overlay-get bm 'annotation)))
+      )))
+
+
+(ert-deftest bm-bookmark--goto-position-nil ()
+  "Test that `bm-goto-position' nil navigates to start of line."
+  (let ((bm-goto-position nil))
+    (with-temp-buffer
+      (insert text)
+      (goto-line 3)
+      (forward-char 5)
+      (bm-bookmark-add)
+      (goto-char (point-min))
+      (bm-next)
+      (should (= (point) (line-beginning-position)))
+      )))
+
+
+(ert-deftest bm-bookmark--goto-position-t ()
+  "Test that `bm-goto-position' t preserves the column where the bookmark was set."
+  (let ((bm-goto-position t))
+    (with-temp-buffer
+      (insert text)
+      (goto-line 3)
+      (forward-char 5)
+      (let ((original-pos (point)))
+        (bm-bookmark-add)
+        (goto-char (point-min))
+        (bm-next)
+        (should (= (point) original-pos))
+        ))))
+
+
+(ert-deftest bm-bookmark--no-wrap-search ()
+  "Test that `bm-next' and `bm-previous' do not wrap when `bm-wrap-search' is nil."
+  (let ((bm-wrap-search nil)
+        (bm-cycle-all-buffers nil))
+    (with-temp-buffer
+      (insert text)
+      (bm-bookmark-line 2)
+      (bm-bookmark-line 4)
+      (should (= (bm-count) 2))
+
+      ;; At end of buffer: bm-next should not move
+      (goto-char (point-max))
+      (bm-next)
+      (should (= (point) (point-max)))
+
+      ;; At start of buffer: bm-previous should not move
+      (goto-char (point-min))
+      (bm-previous)
+      (should (= (point) (point-min)))
+      )))
+
+
+(ert-deftest bm-bookmark--modeline-display-total ()
+  "Test `bm-modeline-info' with `bm-modeline-display-total' set to t."
+  (let ((bm-modeline-display-total t))
+    (with-temp-buffer
+      (insert text)
+      (goto-line 2)
+      (bm-bookmark-add)
+      (should (string= " bm(1)" (bm-modeline-info)))
+      (goto-line 4)
+      (bm-bookmark-add)
+      (should (string= " bm(2)" (bm-modeline-info)))
+      )))
+
+
+(ert-deftest bm-bookmark--modeline-display-when-empty ()
+  "Test `bm-modeline-info' with `bm-modeline-display-when-empty'."
+  (with-temp-buffer
+    (insert text)
+    ;; Default: nil means return nil when no bookmarks
+    (should (null (bm-modeline-info)))
+    (let ((bm-modeline-display-when-empty t))
+      (should (string= " bm(0:0)" (bm-modeline-info)))
+      )))
+
+
+(ert-deftest bm-bookmark--after-goto-hook ()
+  "Test that `bm-after-goto-hook' is called when navigating to a bookmark."
+  (with-temp-buffer
+    (insert text)
+    (goto-line 3)
+    (bm-bookmark-add)
+    (let ((hook-called nil)
+          (test-hook (lambda () (setq hook-called t))))
+      (add-hook 'bm-after-goto-hook test-hook)
+      (unwind-protect
+          (progn
+            (goto-char (point-min))
+            (bm-next)
+            (should hook-called))
+        (remove-hook 'bm-after-goto-hook test-hook))
+      )))
+
+
+(ert-deftest bm-bookmark--bookmark-line-invalid ()
+  "Test that `bm-bookmark-line' with an out-of-range line does not add a bookmark."
+  (with-temp-buffer
+    (insert text)
+    (let ((bm-verbosity-level 0))
+      (bm-bookmark-line 100))
+    (should (= (bm-count) 0))
+    ))
+
+
+(ert-deftest bm-bookmark--multiple-bookmarks-backward-wrapping ()
+  "Test that `bm-previous' wraps from the first bookmark back to the last."
+  (with-temp-buffer
+    (insert text)
+    (goto-line 2)
+    (bm-bookmark-add)
+    (goto-line 5)
+    (bm-bookmark-add)
+
+    (should (= (bm-count) 2))
+
+    (goto-char (point-min))
+    (bm-previous)
+    (let ((bookmark (bm-bookmark-at (point))))
+      (bm-previous)
+      (bm-previous)
+      (should (bm-equal (bm-bookmark-at (point)) bookmark)))
+    ))
