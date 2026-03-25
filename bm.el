@@ -585,7 +585,7 @@ Either the bookmark at point or the BOOKMARK specified as parameter."
   (if (bm-bookmarkp bookmark)
       (let ((annotation (overlay-get bookmark 'annotation)))
         (if annotation
-            (message annotation)
+            (message "%s" annotation)
           (when (> bm-verbosity-level 0)
             (message "No annotation for current bookmark."))))
     (when (> bm-verbosity-level 0)
@@ -1120,7 +1120,7 @@ EV is the mouse event."
             (recenter))
         (let ((annotation (overlay-get bookmark 'annotation)))
           (if annotation
-              (message annotation)))
+              (message "%s" annotation)))
         (when  (overlay-get bookmark 'temporary-bookmark)
           (bm-bookmark-remove  bookmark)))
     (when (> bm-verbosity-level 0)
@@ -1522,7 +1522,8 @@ BUFFER-DATA is the content of `bm-repository-file'."
               (annotation (cdr (assoc 'annotation (car bookmarks)))))
 
           ;; create bookmark if is inside buffer
-          (when (and (<= (point-min) pos)
+          (when (and pos
+                     (<= (point-min) pos)
                      (<= pos (point-max)))
             (goto-char pos)
             (bm-bookmark-add annotation time temporary-bookmark)
@@ -1620,9 +1621,9 @@ BUFFER-DATA is the content of `bm-repository-file'."
   (unless file
     (setq file bm-repository-file))
   (when file
-    (condition-case nil
+    (condition-case err
         (setq bm-repository (bm-repository-read-file file))
-      (error "Cannot read repository at %s" file))))
+      (error (message "Cannot read repository at %s: %s" file (error-message-string err))))))
 
 (defun bm-repository-read-file (file)
   "Read the repository from the FILE specified. Return the repository."
@@ -1642,7 +1643,7 @@ BUFFER-DATA is the content of `bm-repository-file'."
   (when (> bm-verbosity-level 1)
     (message "Writing bookmarks to: %s" file))
   (when file
-    (condition-case nil
+    (condition-case err
         (with-temp-file file
           (set-buffer-file-coding-system 'utf-8)
           (insert ";; bm.el -- persistent bookmarks. ")
@@ -1650,7 +1651,7 @@ BUFFER-DATA is the content of `bm-repository-file'."
           (prin1 bm-repository (current-buffer))
           (pp-buffer)
           (insert "\n"))
-      (error "Cannot save repository to %s" file))))
+      (error (message "Cannot save repository to %s: %s" file (error-message-string err))))))
 
 
 (defun bm-repository-clear nil
