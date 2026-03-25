@@ -54,7 +54,7 @@ This is the last line.")
     (should (= 0 (length (car (bm-lists)))))
     (should (= 2 (length (cdr (bm-lists)))))
 
-    (goto-line 3)
+    (goto-char (point-min)) (forward-line 2)
     (should (= 1 (length (car (bm-lists)))))
     (should (= 1 (length (cdr (bm-lists)))))
 
@@ -114,8 +114,8 @@ This is the last line.")
 
     (should (= (bm-count) 2))
 
-    (narrow-to-region (progn (goto-line 3) (point-at-bol))
-                      (progn (goto-line 5) (point-at-bol)))
+    (narrow-to-region (progn (goto-char (point-min)) (forward-line 2) (line-beginning-position))
+                      (progn (goto-char (point-min)) (forward-line 4) (line-beginning-position)))
 
     ;; don't count bookmarks outside narrowing
     (should (= (bm-count) 0))
@@ -145,8 +145,8 @@ This is the last line.")
 
     (should (= (bm-count) 3))
 
-    (narrow-to-region (progn (goto-line 3) (point-at-bol))
-                      (progn (goto-line 5) (point-at-bol)))
+    (narrow-to-region (progn (goto-char (point-min)) (forward-line 2) (line-beginning-position))
+                      (progn (goto-char (point-min)) (forward-line 4) (line-beginning-position)))
 
     (should (= (bm-count) 1))
 
@@ -208,7 +208,7 @@ This is the last line.")
     (bm-toggle-buffer-persistence)
 
     ;;(bm-bookmark-line 6)
-    (goto-line 6)
+    (goto-char (point-min)) (forward-line 5)
     (bm-bookmark-add "XXX")
     (let* ((b (bm-bookmark-at (point)))
            (timestamp (overlay-get b 'time)))
@@ -266,15 +266,15 @@ line2
 line3
 line4
 ")
-    (goto-line 1)
+    (goto-char (point-min))
     (bm-bookmark-add)
-    (goto-line 3)
+    (goto-char (point-min)) (forward-line 2)
     (bm-bookmark-add)
 
     (should (= (bm-count) 2))
 
     ;; insert a newline
-    (goto-char (point-at-bol))
+    (goto-char (line-beginning-position))
     (insert "\n")
 
     (goto-char (point-min))
@@ -293,7 +293,7 @@ line4
 (ert-deftest bm-bookmark--add-test ()
   (with-temp-buffer
     (insert text)
-    (goto-line 2)
+    (goto-char (point-min)) (forward-line 1)
     (bm-bookmark-add)
 
     (should (= (bm-count) 1))
@@ -308,7 +308,7 @@ line4
 (ert-deftest bm-bookmark--add-remove-test ()
   (with-temp-buffer
     (insert text)
-    (goto-line 2)
+    (goto-char (point-min)) (forward-line 1)
     (bm-bookmark-add)
 
     (should (= (bm-count) 1))
@@ -325,9 +325,9 @@ line4
 (ert-deftest bm-bookmark--multiple-bookmarks-forward-wrapping ()
   (with-temp-buffer
     (insert text)
-    (goto-line 2)
+    (goto-char (point-min)) (forward-line 1)
     (bm-bookmark-add)
-    (goto-line 5)
+    (goto-char (point-min)) (forward-line 4)
     (bm-bookmark-add)
 
     (should (= (bm-count) 2))
@@ -344,9 +344,9 @@ line4
 (ert-deftest bm-bookmark--bm-temporary-bookmark ()
   (with-temp-buffer
     (insert text)
-    (goto-line 2)
+    (goto-char (point-min)) (forward-line 1)
     (bm-bookmark-add nil nil t)
-    (goto-line 5)
+    (goto-char (point-min)) (forward-line 4)
     (bm-bookmark-add nil nil t)
 
     (should (= (bm-count) 2))
@@ -365,9 +365,9 @@ line4
   (let ((bm-temporary-bookmark-p t))
     (with-temp-buffer
       (insert text)
-      (goto-line 2)
+      (goto-char (point-min)) (forward-line 1)
       (bm-bookmark-add)
-      (goto-line 5)
+      (goto-char (point-min)) (forward-line 4)
       (bm-bookmark-add)
 
       (should (= (bm-count) 2))
@@ -385,7 +385,7 @@ line4
 (ert-deftest bm-bookmarkp-test ()
   (with-temp-buffer
     (insert text)
-    (goto-line 2)
+    (goto-char (point-min)) (forward-line 1)
     (bm-bookmark-add)
     (let ((bm (bm-bookmark-at (point))))
       (should (bm-bookmarkp bm))
@@ -401,7 +401,7 @@ line4
 (ert-deftest bm-bookmark--modeline-test ()
   (with-temp-buffer
     (insert text)
-    (goto-line 2)
+    (goto-char (point-min)) (forward-line 1)
     (bm-bookmark-add)
 
     (should (string= (bm-modeline-info) " bm(0:1)"))
@@ -416,7 +416,7 @@ line4
   "Test that `bm-toggle' adds and removes a bookmark at point."
   (with-temp-buffer
     (insert text)
-    (goto-line 3)
+    (goto-char (point-min)) (forward-line 2)
     (bm-toggle)
     (should (= (bm-count) 1))
     (should (bm-bookmarkp (bm-bookmark-at (point))))
@@ -430,11 +430,11 @@ line4
   "Test that `bm-equal' compares bookmarks by position."
   (with-temp-buffer
     (insert text)
-    (goto-line 3)
+    (goto-char (point-min)) (forward-line 2)
     (bm-bookmark-add)
     (let ((bm1 (bm-bookmark-at (point))))
       (should (bm-equal bm1 bm1))
-      (goto-line 5)
+      (goto-char (point-min)) (forward-line 4)
       (bm-bookmark-add)
       (let ((bm2 (bm-bookmark-at (point))))
         (should (not (bm-equal bm1 bm2)))
@@ -468,7 +468,7 @@ line4
   "Test that `bm-bookmark-annotate' stores an annotation on a bookmark."
   (with-temp-buffer
     (insert text)
-    (goto-line 3)
+    (goto-char (point-min)) (forward-line 2)
     (bm-bookmark-add)
     (let ((bm (bm-bookmark-at (point))))
       (should (bm-bookmarkp bm))
@@ -483,7 +483,7 @@ line4
   (let ((bm-goto-position nil))
     (with-temp-buffer
       (insert text)
-      (goto-line 3)
+      (goto-char (point-min)) (forward-line 2)
       (forward-char 5)
       (bm-bookmark-add)
       (goto-char (point-min))
@@ -497,7 +497,7 @@ line4
   (let ((bm-goto-position t))
     (with-temp-buffer
       (insert text)
-      (goto-line 3)
+      (goto-char (point-min)) (forward-line 2)
       (forward-char 5)
       (let ((original-pos (point)))
         (bm-bookmark-add)
@@ -534,10 +534,10 @@ line4
   (let ((bm-modeline-display-total t))
     (with-temp-buffer
       (insert text)
-      (goto-line 2)
+      (goto-char (point-min)) (forward-line 1)
       (bm-bookmark-add)
       (should (string= " bm(1)" (bm-modeline-info)))
-      (goto-line 4)
+      (goto-char (point-min)) (forward-line 3)
       (bm-bookmark-add)
       (should (string= " bm(2)" (bm-modeline-info)))
       )))
@@ -558,7 +558,7 @@ line4
   "Test that `bm-after-goto-hook' is called when navigating to a bookmark."
   (with-temp-buffer
     (insert text)
-    (goto-line 3)
+    (goto-char (point-min)) (forward-line 2)
     (bm-bookmark-add)
     (let ((hook-called nil)
           (test-hook (lambda () (setq hook-called t))))
@@ -586,9 +586,9 @@ line4
   "Test that `bm-previous' wraps from the first bookmark back to the last."
   (with-temp-buffer
     (insert text)
-    (goto-line 2)
+    (goto-char (point-min)) (forward-line 1)
     (bm-bookmark-add)
-    (goto-line 5)
+    (goto-char (point-min)) (forward-line 4)
     (bm-bookmark-add)
 
     (should (= (bm-count) 2))
