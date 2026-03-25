@@ -271,25 +271,25 @@
   :prefix "bm-")
 
 (defcustom bm-highlight-style 'bm-highlight-only-line
-  "*Specify how bookmarks are highlighted."
+  "Specify how bookmarks are highlighted."
   :type '(choice (const bm-highlight-only-line)
                  (const bm-highlight-only-fringe)
                  (const bm-highlight-line-and-fringe))
   :group 'bm)
 
 (defcustom bm-face 'bm-face
-  "*Specify face used to highlight the current line."
+  "Specify face used to highlight the current line."
   :type 'face
   :group 'bm)
 
 
 (defcustom bm-persistent-face 'bm-persistent-face
-  "*Specify face used to highlight the current line for persistent bookmarks."
+  "Specify face used to highlight the current line for persistent bookmarks."
   :type 'face
   :group 'bm)
 
 (defcustom bm-priority 0
-  "*Specify bm overlay priority.
+  "Specify bm overlay priority.
 
 Higher integer means higher priority, so bm overlay will have precedence
 over overlays with lower priority.  *Don't* use a negative number."
@@ -324,12 +324,12 @@ over overlays with lower priority.  *Don't* use a negative number."
 
 
 (defcustom bm-fringe-face 'bm-fringe-face
-  "*Specify face used to highlight the fringe."
+  "Specify face used to highlight the fringe."
   :type 'face
   :group 'bm)
 
 (defcustom bm-fringe-persistent-face 'bm-fringe-persistent-face
-  "*Specify face used to highlight the fringe for persistent bookmarks."
+  "Specify face used to highlight the fringe for persistent bookmarks."
   :type 'face
   :group 'bm)
 
@@ -359,7 +359,7 @@ over overlays with lower priority.  *Don't* use a negative number."
 
 
 (defcustom bm-annotate-on-create nil
-  "*Specify if bookmarks must be annotated when created.
+  "Specify if bookmarks must be annotated when created.
 
 nil, don't ask for an annotation when creating a bookmark.
 t, always ask for annotation when creating a bookmark."
@@ -368,7 +368,7 @@ t, always ask for annotation when creating a bookmark."
 
 
 (defcustom bm-wrap-search t
-  "*Specify if bookmark search should wrap.
+  "Specify if bookmark search should wrap.
 
 nil, don't wrap when there are no more bookmarks.
 t, wrap."
@@ -377,7 +377,7 @@ t, wrap."
 
 
 (defcustom bm-wrap-immediately t
-  "*Specify if a wrap should be announced or not.
+  "Specify if a wrap should be announced or not.
 Only has effect when `bm-wrap-search' is t.
 
 nil, announce before wrapping.
@@ -387,7 +387,7 @@ t, don't announce."
 
 
 (defcustom bm-cycle-all-buffers nil
-  "*Specify if bookmark search is done across buffers.
+  "Specify if bookmark search is done across buffers.
 This will ignore the `bm-wrap-search' setting.
 
 nil, only search in current buffer.
@@ -403,17 +403,17 @@ t, search in all open buffers."
   :group 'bm)
 
 (defcustom bm-modeline-display-front-space " "
-  "* Specify the space in front of the bookmark count on the mode line."
+  "Specify the space in front of the bookmark count on the mode line."
   :type 'string
   :group 'bm)
 
 (defcustom bm-modeline-display-end-space nil
-  "* Specify the space after the bookmark count on the mode line."
+  "Specify the space after the bookmark count on the mode line."
   :type 'string
   :group 'bm)
 
 (defcustom bm-modeline-display-when-empty nil
-  "*Specify if the bm mode-line will be display is there are no
+  "Specify if the bm mode-line will be display is there are no
   bookmarks. Used by the `bm-modeline-info'
 
 nil, do not display anything is there are no bookmarks.
@@ -422,7 +422,7 @@ t, always display the total number of bookmarks."
   :group 'bm)
 
 (defcustom bm-modeline-display-total nil
-  "*Specify the bm mode-line display format. Used by the `bm-modeline-info'.
+  "Specify the bm mode-line display format. Used by the `bm-modeline-info'.
 
 nil, display the number of bookmarks above and below the cursor.
 t, only display the total number of bookmarks."
@@ -436,13 +436,13 @@ the bookmark will be removed if this option is not nil."
   :group 'bm)
 
 (defcustom bm-recenter nil
-  "*Specify if the buffer should be recentered after jumping to a bookmark."
+  "Specify if the buffer should be recentered after jumping to a bookmark."
   :type 'boolean
   :group 'bm)
 
 
 (defcustom bm-goto-position t
-  "*Specify the position, on line, to go to when jumping to a bookmark.
+  "Specify the position, on line, to go to when jumping to a bookmark.
 
 nil, goto start of line.
 t, goto position on the line where the bookmark was set."
@@ -451,13 +451,13 @@ t, goto position on the line where the bookmark was set."
 
 
 (defcustom bm-electric-show t
-  "*If t, `bm-show' acts like an electric buffer."
+  "If t, `bm-show' acts like an electric buffer."
   :type 'boolean
   :group 'bm)
 
 
 (defcustom bm-show-enable-mouse t
-  "*If t, `bm-show' allows for mouse clicks to jump to bookmarks."
+  "If t, `bm-show' allows for mouse clicks to jump to bookmarks."
   :type 'boolean
   :group 'bm)
 
@@ -465,7 +465,7 @@ t, goto position on the line where the bookmark was set."
 (defcustom bm-repository-file (if (file-exists-p (expand-file-name "~/.bm-repository")) ; use the old path if it exists
                                   (expand-file-name "~/.bm-repository")
                                 (expand-file-name "bm-repository" user-emacs-directory))
-  "*Filename to store persistent bookmarks across sessions.
+  "Filename to store persistent bookmarks across sessions.
 
 nil, the repository will not be persistent."
   :type 'string
@@ -473,13 +473,13 @@ nil, the repository will not be persistent."
 
 
 (defcustom bm-repository-size 1000
-  "*Size of persistent repository. If nil then there is no limit."
+  "Size of persistent repository. If nil then there is no limit."
   :type 'integer
   :group 'bm)
 
 
 (defcustom bm-buffer-persistence nil
-  "*Specify if bookmarks in a buffer should be persistent.
+  "Specify if bookmarks in a buffer should be persistent.
 Buffer local variable.
 
 nil, don't save bookmarks.
@@ -490,13 +490,13 @@ t, save bookmarks."
 
 
 (defcustom bm-show-annotations t
-  "*Specify if annotations are shown by `bm-show' and
+  "Specify if annotations are shown by `bm-show' and
 `bm-show-all'."
   :type 'boolean
   :group 'bm)
 
 (defcustom bm-verbosity-level 2
-  "*Verbosity level.
+  "Verbosity level.
 The default is 2, then `bm' will let you know about what is going
 on, similar to before. A setting of 1, only errors will be
 displayed it will be silent otherwise. Finally, a setting of 0
