@@ -1,6 +1,6 @@
 ;;; bm.el --- Visible bookmarks in buffer. -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2000-2025  Jo Odland
+;; Copyright (C) 2000-2026  Jo Odland
 
 ;; Author: Jo Odland <jo.odland(at)gmail.com>
 ;; Keywords: bookmark, highlight, faces, persistent
@@ -86,13 +86,11 @@
 
 ;;; Known limitations:
 ;;
-;;   This package is developed and tested on GNU Emacs 26.x. It should
-;;   also work on all GNU Emacs newer than version 21.x.
+;;   This package is developed and tested on GNU Emacs 29+.
 ;;
 ;;   There are some incompatibilities with lazy-lock when using
 ;;   fill-paragraph. All bookmark below the paragraph being filled
-;;   will be lost. This issue can be resolved using the
-;;   `jit-lock-mode' introduced in GNU Emacs 21.1
+;;   will be lost. This issue can be resolved using `jit-lock-mode'.
 ;;
 
 
@@ -273,7 +271,7 @@
   :prefix "bm-")
 
 (defcustom bm-highlight-style 'bm-highlight-only-line
-  "*Specify how bookmars are highlighted."
+  "*Specify how bookmarks are highlighted."
   :type '(choice (const bm-highlight-only-line)
                  (const bm-highlight-only-fringe)
                  (const bm-highlight-line-and-fringe))
@@ -406,7 +404,7 @@ t, search in all open buffers."
 
 (defcustom bm-modeline-display-front-space " "
   "* Specify the space in front of the bookmark count on the mode line."
-  :type 'boolean
+  :type 'string
   :group 'bm)
 
 (defcustom bm-modeline-display-end-space nil
@@ -431,8 +429,8 @@ t, only display the total number of bookmarks."
   :type 'boolean
   :group 'bm)
 
-(defcustom temporary-bookmark-p nil
-  "When stopping on a bookmark using `bm-next' or `bm-previsour'
+(defcustom bm-temporary-bookmark-p nil
+  "When stopping on a bookmark using `bm-next' or `bm-previous'
 the bookmark will be removed if this option is not nil."
   :type 'boolean
   :group 'bm)
@@ -502,7 +500,7 @@ t, save bookmarks."
 The default is 2, then `bm' will let you know about what is going
 on, similar to before. A setting of 1, only errors will be
 displayed it will be silent otherwise. Finally, a setting of 0
-keeps `bm' of ever outputting anything."
+keeps `bm' from ever outputting anything."
   :type '(choice (const :tag "Silent" 0)
                  (const :tag "Errors" 1)
                  (const :tag "Info" 2))
@@ -535,7 +533,7 @@ before bm is loaded.")
   "The name of the buffer used to show bookmarks by `bm-show'.")
 
 (defvar bm-marker 'bm-marker-left
-  "Fringe marker side. Left of right.")
+  "Fringe marker side. Left or right.")
 
 (defvar bm-current nil
   "Current bookmark. Used to manage LIFO order when `bm-in-lifo-order' is not nil")
@@ -608,16 +606,16 @@ Either the bookmark at point or the BOOKMARK specified as parameter."
   "Get the correct face according to the value of `bm-buffer-presistence'."
   (if bm-buffer-persistence bm-persistent-face bm-face))
 
-(defun bm-get-highlight-face-fringde nil
-  "Get the correct fringde face according to the value of `bm-buffer-presistence'."
+(defun bm-get-highlight-face-fringe nil
+  "Get the correct fringe face according to the value of `bm-buffer-persistence'."
   (if bm-buffer-persistence bm-fringe-persistent-face bm-fringe-face))
 
 (defun bm-get-fringe-marker nil
-  "Get the fringde marker string."
+  "Get the fringe marker string."
   (propertize " " 'display (list (if (eq bm-marker 'bm-marker-left)
                                      'left-fringe
                                    'right-fringe)
-                                 bm-marker (bm-get-highlight-face-fringde))))
+                                 bm-marker (bm-get-highlight-face-fringe))))
 
 (defun bm-bookmark-add (&optional annotation time temporary-bookmark)
   "Add bookmark at current line.
@@ -638,7 +636,7 @@ when `bm-next' or `bm-previous' navigate to this bookmark."
         ;; set market
         (overlay-put bookmark 'time (or time (float-time)))
         (overlay-put bookmark 'temporary-bookmark
-                     (if temporary-bookmark t temporary-bookmark-p))
+                     (if temporary-bookmark t bm-temporary-bookmark-p))
         (overlay-put bookmark 'position (point-marker))
         ;; select bookmark face
         (when (bm-highlight-line)
@@ -739,7 +737,7 @@ http://www.gnu.org/s/emacs/manual/html_node/elisp/Overlay-Properties.html"
 
 (defun bm-freeze (overlay after begin end &optional len)
   "Prevent OVERLAY from being extended to multiple lines.
-When inserting inside or behind the overlay, keep the original start postion.
+When inserting inside or behind the overlay, keep the original start position.
 
 OVERLAY the overlay being modified.
 AFTER nil when called before, t when called after modification.
@@ -1621,7 +1619,7 @@ BUFFER-DATA is the content of `bm-repository-file'."
   "Remove data for a buffer from the repository identified by KEY."
   (let ((repository nil))
     (when (assoc key bm-repository)
-      ;; remove all occurances
+      ;; remove all occurrences
       (while bm-repository
         (if (not (equal key (car (car bm-repository))))
             (setq repository (append repository (list (car bm-repository)))))
@@ -1639,7 +1637,7 @@ BUFFER-DATA is the content of `bm-repository-file'."
       (error "Cannot read repository at %s" file))))
 
 (defun bm-repository-read-file (file)
-  "Read the resposity from the FILE specified. Return the repositoty."
+  "Read the repository from the FILE specified. Return the repository."
   (when (> bm-verbosity-level 1)
     (message "Reading bookmarks from: %s" file))
 

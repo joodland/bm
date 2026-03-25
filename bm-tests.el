@@ -362,7 +362,7 @@ line4
 
 
 (ert-deftest bm-bookmark--option-bm-temporary-bookmark ()
-  (let ((temporary-bookmark-p t))
+  (let ((bm-temporary-bookmark-p t))
     (with-temp-buffer
       (insert text)
       (goto-line 2)
