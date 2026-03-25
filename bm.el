@@ -783,13 +783,7 @@ http://www.gnu.org/s/emacs/manual/html_node/elisp/Overlay-Properties.html"
 
 (defun bm-bookmark-at (point)
   "Get bookmark at POINT."
-  (let ((overlays (overlays-at point))
-        (bookmark nil))
-    (while (and (not bookmark) overlays)
-      (if (bm-bookmarkp (car overlays))
-          (setq bookmark (car overlays))
-        (setq overlays (cdr overlays))))
-    bookmark))
+  (cl-find-if #'bm-bookmarkp (overlays-at point)))
 
 
 (defun bm-lists (&optional direction predicate)
@@ -829,7 +823,7 @@ selection criteria for filtering the lists."
 
 
 (defun bm-overlay-in-buffer()
-  "overlays in current buffer"
+  "Return list of bookmark overlays in current buffer."
   (let ((bookmarks (bm-lists)))
     (append
 
@@ -838,10 +832,10 @@ selection criteria for filtering the lists."
      (cdr bookmarks))))
 
 (defun bm-overlay-all()
-  "overlays in all buffer"
+  "Return list of bookmark overlays in all buffers."
   (cl-mapcan (lambda (x) (if (listp x) x nil))
              (remq
-              nil  (mapcar #'(lambda (buffer)
+              nil  (mapcar (lambda (buffer)
                                (with-current-buffer buffer
                                  (bm-overlay-in-buffer))
                                )(buffer-list)))))
@@ -850,7 +844,7 @@ selection criteria for filtering the lists."
   (sort  (if all
              (bm-overlay-all)
            (bm-overlay-in-buffer))
-         #'(lambda(o1 o2)
+         (lambda(o1 o2)
              (if reverse
                  (< (overlay-get o1 'time) (overlay-get o2 'time))
                (> (overlay-get o1 'time) (overlay-get o2 'time))))))
@@ -1077,11 +1071,10 @@ EV is the mouse event."
 (defun bm-remove-all-all-buffers nil
   "Delete all visible bookmarks in all open buffers."
   (interactive)
-  (save-excursion
-    (mapcar #'(lambda (buffer)
-                (set-buffer buffer)
-                (bm-remove-all-current-buffer))
-            (buffer-list))))
+  (mapc (lambda (buffer)
+          (with-current-buffer buffer
+            (bm-remove-all-current-buffer)))
+        (buffer-list)))
 
 
 ;;;###autoload
@@ -1286,7 +1279,7 @@ users by the likes of `bm-show' and `bm-show-all'."
                        bm-header-contents)
        ;; The bookmark list
        (mapconcat
-        #'(lambda (bm)
+        (lambda (bm)
             (with-current-buffer (overlay-buffer bm)
               (let* ((line (lstrip (buffer-substring (overlay-start bm)
                                                      (overlay-end bm))))
@@ -1384,10 +1377,10 @@ optional parameter is present."
     (if (null buffer-name)
         (when (> bm-verbosity-level 0)
           (message "No bookmark at this line."))
-      (let ((current-buffer (current-buffer)))
+      (let ((source-buffer (current-buffer)))
         (pop-to-buffer (get-buffer buffer-name))
         (bm-goto bookmark)
-        (pop-to-buffer current-buffer)))))
+        (pop-to-buffer source-buffer)))))
 
 
 (defvar bm-show-mode-map
@@ -1455,7 +1448,7 @@ LINES the number of lines to move backwards."
 (defun bm-redraw-bookmarks nil
   "Update color on bookmarks after persistent state has changed."
   (let ((bookmarks (bm-lists)))
-    (mapc #'(lambda (bookmark)
+    (mapc (lambda (bookmark)
               (when (bm-highlight-line)
                 (overlay-put bookmark 'face (bm-get-highlight-face)))
 
@@ -1505,7 +1498,7 @@ otherwise we use the context after."
 (defun bm-buffer-restore-all nil
   "Restore bookmarks in all buffers."
   (save-current-buffer
-    (mapc #'(lambda (buffer)
+    (mapc (lambda (buffer)
               (set-buffer buffer)
               (bm-buffer-restore))
           (buffer-list))))
@@ -1558,7 +1551,7 @@ BUFFER-DATA is the content of `bm-repository-file'."
                     (cons 'bookmarks
                           (let ((bookmarks (bm-lists)))
                             (mapcar
-                             #'(lambda (bm)
+                             (lambda (bm)
                                  (let ((position (max
                                                   ;; sometimes marker-position is before start of overlay
                                                   ;; marker is not updated when overlay hooks are called.
@@ -1600,7 +1593,7 @@ BUFFER-DATA is the content of `bm-repository-file'."
 (defun bm-buffer-save-all nil
   "Save bookmarks in all buffers."
   (save-current-buffer
-    (mapc #'(lambda (buffer)
+    (mapc (lambda (buffer)
               (set-buffer buffer)
               (bm-buffer-save))
           (buffer-list))))
@@ -1619,14 +1612,7 @@ BUFFER-DATA is the content of `bm-repository-file'."
 
 (defun bm-repository-remove (key)
   "Remove data for a buffer from the repository identified by KEY."
-  (let ((repository nil))
-    (when (assoc key bm-repository)
-      ;; remove all occurrences
-      (while bm-repository
-        (if (not (equal key (car (car bm-repository))))
-            (setq repository (append repository (list (car bm-repository)))))
-        (setq bm-repository (cdr bm-repository)))
-      (setq bm-repository repository))))
+  (setq bm-repository (cl-remove key bm-repository :key #'car :test #'equal)))
 
 
 (defun bm-repository-load (&optional file)
