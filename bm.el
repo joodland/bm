@@ -485,8 +485,8 @@ Buffer local variable.
 nil, don't save bookmarks.
 t, save bookmarks."
   :type 'boolean
+  :local t
   :group 'bm)
-(make-variable-buffer-local 'bm-buffer-persistence)
 
 
 (defcustom bm-show-annotations t
@@ -525,9 +525,8 @@ before bm is loaded.")
 (defvar bm-bookmark-context-size 16
   "The size of context stored, before and after, for each bookmark.")
 
-(defvar bm-wrapped nil
+(defvar-local bm-wrapped nil
   "State variable to support wrapping.")
-(make-variable-buffer-local 'bm-wrapped)
 
 (defconst bm-show-buffer-name "*bm-bookmarks*"
   "The name of the buffer used to show bookmarks by `bm-show'.")
@@ -1005,14 +1004,13 @@ EV is the mouse event."
   (interactive)
   (let ((current (current-buffer))
         (buffers
-         (save-excursion
-           (remq nil (mapcar #'(lambda (buffer)
-                                 (set-buffer buffer)
-                                 (if (> (bm-count) 0)
-                                     buffer
-                                   nil))
-                             ;; drop current buffer from list
-                             (cdr (buffer-list)))))))
+         (remq nil (mapcar (lambda (buffer)
+                             (with-current-buffer buffer
+                               (if (> (bm-count) 0)
+                                   buffer
+                                 nil)))
+                           ;; drop current buffer from list
+                           (cdr (buffer-list))))))
 
     (if buffers
         (progn
@@ -1033,14 +1031,13 @@ EV is the mouse event."
   "Goto last bookmark in previous buffer."
   (interactive)
   (let ((buffers
-         (save-excursion
-           (remq nil (mapcar #'(lambda (buffer)
-                                 (set-buffer buffer)
-                                 (if (> (bm-count) 0)
-                                     buffer
-                                   nil))
-                             ;; drop current buffer from list
-                             (reverse (cdr (buffer-list))))))))
+         (remq nil (mapcar (lambda (buffer)
+                             (with-current-buffer buffer
+                               (if (> (bm-count) 0)
+                                   buffer
+                                 nil)))
+                           ;; drop current buffer from list
+                           (reverse (cdr (buffer-list)))))))
 
     (if buffers
         (progn
