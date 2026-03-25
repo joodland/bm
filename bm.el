@@ -1073,6 +1073,7 @@ EV is the mouse event."
       (bm-previous))))
 
 
+;;;###autoload
 (defun bm-remove-all-all-buffers nil
   "Delete all visible bookmarks in all open buffers."
   (interactive)
@@ -1083,6 +1084,7 @@ EV is the mouse event."
             (buffer-list))))
 
 
+;;;###autoload
 (defun bm-remove-all-current-buffer nil
   "Delete all visible bookmarks in current buffer."
   (interactive)
@@ -1132,6 +1134,7 @@ EV is the mouse event."
       (message "Bookmark not found."))))
 
 
+;;;###autoload
 (defun bm-bookmark-regexp nil
   "Set bookmark on lines that match regexp."
   (interactive)
@@ -1181,12 +1184,14 @@ Region defined by BEG and END."
   (quit-window nil (get-buffer-window bm-show-buffer-name)))
 
 
+;;;###autoload
 (defun bm-show-all nil
   "Show bookmarked lines in all buffers."
   (interactive)
   (apply #'bm-show-display-lines
          (bm-show-extract-bookmarks bm-in-lifo-order t)))
 
+;;;###autoload
 (defun bm-show nil
   "Show bookmarked lines in current buffer."
   (interactive)
